@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══ 1. DEPARTMENT ═══
+model Department {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  description String? 
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users   User[]
+  tickets Ticket[]
+
+  @@map("departments")
+}
+
+// ═══ 2. USER ═══
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  passwordHash String    @map("password_hash")
+  fullName     String    @map("full_name")
+  email        String?   @unique
+  phone        String?
+  role         String
+  position     String?
+  departmentId String?   @map("department_id")
+  department   Department? @relation(fields: [departmentId], references: [id])
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  createdTickets  Ticket[]      @relation("TicketCreator")
+  assignedTickets Ticket[]      @relation("TicketAssignee")
+  replies         TicketReply[]
+
+  @@index([role])
+  @@index([departmentId])
+  @@map("users")
+}
+
+// ═══ 3. TICKET ═══
+model Ticket {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  title       String
+  description String?
+  category    String
+  priority    String  @default("NORMAL")
+  status      String  @default("NEW")
+
+  creatorId       String     @map("creator_id")
+  creator         User       @relation("TicketCreator", fields: [creatorId], references: [id])
+  creatorName     String     @map("creator_name")
+  creatorPhone    String?    @map("creator_phone")
+  creatorPosition String?    @map("creator_position")
+
+  departmentId   String     @map("department_id")
+  department     Department @relation(fields: [departmentId], references: [id])
+  departmentName String     @map("department_name")
+
+  assigneeId   String? @map("assignee_id")
+  assignee     User?   @relation("TicketAssignee", fields: [assigneeId], references: [id])
+  assigneeName String? @map("assignee_name")
+
+  dispatcherId String?   @map("dispatcher_id")
+  dispatchedAt DateTime? @map("dispatched_at")
+
+  scheduledAt DateTime? @map("scheduled_at")
+  completedAt DateTime? @map("completed_at")
+  processNote String?   @map("process_note")
+
+  rating   Int?
+  feedback String?
+  ratedAt  DateTime? @map("rated_at")
+
+  supplies    TicketSupply[]
+  attachments TicketAttachment[]
+  replies     TicketReply[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([creatorId])
+  @@index([assigneeId])
+  @@index([departmentId])
+  @@map("tickets")
+}
+
+// ═══ 4. TICKET_SUPPLY ═══
+model TicketSupply {
+  id        String   @id @default(uuid())
+  ticketId  String   @map("ticket_id")
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  name      String
+  quantity  Int      @default(1)
+  unit      String   @default("Cái")
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([ticketId])
+  @@map("ticket_supplies")
+}
+
+// ═══ 5. TICKET_ATTACHMENT ═══
+model TicketAttachment {
+  id         String   @id @default(uuid())
+  ticketId   String   @map("ticket_id")
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fileName   String   @map("file_name")
+  filePath   String   @map("file_path")
+  fileSize   Int      @map("file_size")
+  fileType   String   @map("file_type")
+  stage      String   @default("BEFORE")
+  uploadedBy String   @map("uploaded_by")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  @@index([ticketId])
+  @@map("ticket_attachments")
+}
+
+// ═══ 6. TICKET_REPLY ═══
+model TicketReply {
+  id        String   @id @default(uuid())
+  ticketId  String   @map("ticket_id")
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  userName  String   @map("user_name")
+  userRole  String   @map("user_role")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([ticketId])
+  @@map("ticket_replies")
+}
+
+// ═══ 7. AUDIT_LOG ═══
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  userName   String?  @map("user_name")
+  userRole   String?  @map("user_role")
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address")
+  level      String   @default("INFO")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

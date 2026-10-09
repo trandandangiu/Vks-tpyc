@@ -1,0 +1,6 @@
+{
+  "name": "Hệ Thống Phiếu Yêu Cầu Kỹ Thuật - Bộ phận Chuyển Đổi Số",
+  "description": "Hệ thống quản lý, tiếp nhận và điều phối phiếu yêu cầu kỹ thuật công nghệ thông tin - Bộ phận Chuyển đổi số với 3 vai trò Admin, Khách hàng và Kỹ thuật viên.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
