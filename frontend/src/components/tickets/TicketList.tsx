@@ -1,365 +1,484 @@
-import React, { useMemo } from 'react';
+// src/components/tickets/TicketList.tsx
+import React, { useState, useMemo, useEffect } from 'react';
 import { Ticket, STATUS_CONFIG } from '../../types';
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  CartesianGrid, // ✅ THÊM
-} from 'recharts';
-import {
-  FileText,
-  Clock,
-  Wrench,
-  CheckCircle2,
-  TrendingUp,
-  AlertTriangle,
-  ArrowUpRight,
-} from 'lucide-react';
 import { StatusBadge, PriorityBadge } from '../common/StatusBadge';
+import {
+  Search,
+  Filter,
+  ChevronDown,
+  FileText,
+  Calendar,
+  User as UserIcon,
+  Building2,
+  ArrowUpDown,
+  X,
+  Edit2,
+  Trash2,
+} from 'lucide-react';   // ✅ THÊM Edit2, Trash2
 
-interface AdminOverviewProps {
+interface TicketListProps {
   tickets: Ticket[];
-  onViewTicket: (ticket: Ticket) => void;
-  onGoToDispatch: () => void;
-  onGoToProcessing: () => void; // ✅ THÊM
-  onGoToDone: () => void;       // ✅ THÊM
+  onSelectTicket: (ticket: Ticket) => void;
+  title?: string;
+  showFilters?: boolean;
+  initialStatusFilter?: string;
+  onFilterChange?: () => void;
+  onEdit?: (ticket: Ticket) => void;      // ✅ THÊM
+  onDelete?: (ticket: Ticket) => void;    // ✅ THÊM
+  canManage?: boolean;                    // ✅ THÊM — chỉ ADMIN mới thấy nút
 }
 
-export const AdminOverview: React.FC<AdminOverviewProps> = ({
+type SortField = 'code' | 'title' | 'priority' | 'status' | 'createdAt';
+type SortDir = 'asc' | 'desc';
+
+const PROCESSING_GROUP = ['PROCESSING', 'ASSIGNED', 'WAITING_SUPPLY'];
+
+export const TicketList: React.FC<TicketListProps> = ({
   tickets,
-  onViewTicket,
-  onGoToDispatch,
-  onGoToProcessing, // ✅ THÊM
-  onGoToDone,       // ✅ THÊM
+  onSelectTicket,
+  title = 'Danh sách phiếu yêu cầu',
+  showFilters = true,
+  initialStatusFilter = 'ALL',
+  onFilterChange,
+  onEdit,
+  onDelete,
+  canManage = false,
 }) => {
-  // 1. KPI counts
-  const totalCount = tickets.length;
-  const newCount = tickets.filter((t) => t.status === 'NEW').length;
-  const processingCount = tickets.filter(
-    (t) => t.status === 'PROCESSING' || t.status === 'ASSIGNED' || t.status === 'WAITING_SUPPLY'
-  ).length;
-  const doneCount = tickets.filter((t) => t.status === 'DONE').length;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
+  const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  // 2. Status distribution for PieChart
-  const statusChartData = useMemo(() => {
-    const counts: Record<string, number> = {
-      NEW: 0,
-      ASSIGNED: 0,
-      PROCESSING: 0,
-      WAITING_SUPPLY: 0,
-      DONE: 0,
-      CANCELLED: 0,
-    };
+  useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+    setPage(1);
+  }, [initialStatusFilter]);
 
-    tickets.forEach((t) => {
-      if (counts[t.status] !== undefined) {
-        counts[t.status]++;
-      }
-    });
+  const filteredTickets = useMemo(() => {
+    let result = [...tickets];
 
-    const colors: Record<string, string> = {
-      NEW: '#94a3b8',
-      ASSIGNED: '#a855f7',
-      PROCESSING: '#3b82f6',
-      WAITING_SUPPLY: '#f59e0b',
-      DONE: '#10b981',
-      CANCELLED: '#f43f5e',
-    };
-
-    return Object.entries(counts).map(([statusKey, count]) => ({
-      name: STATUS_CONFIG[statusKey as keyof typeof STATUS_CONFIG]?.label || statusKey,
-      value: count,
-      color: colors[statusKey] || '#ccc',
-    }));
-  }, [tickets]);
-
-  // 3. 7-day BarChart data ✅ THÊM `processing`
-  const last7DaysData = useMemo(() => {
-    const days: Array<{ day: string; created: number; processing: number; done: number }> = [];
-    const now = new Date();
-
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dayStr = d.toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' });
-      const datePrefix = d.toISOString().slice(0, 10);
-
-      const createdCount = tickets.filter((t) => t.createdAt.startsWith(datePrefix)).length;
-
-      // ✅ Đếm phiếu đang xử lý theo updatedAt trong ngày
-      const processingCountOnDay = tickets.filter(
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
         (t) =>
-          (t.status === 'PROCESSING' || t.status === 'ASSIGNED' || t.status === 'WAITING_SUPPLY') &&
-          t.updatedAt &&
-          t.updatedAt.startsWith(datePrefix)
-      ).length;
-
-      const doneCountOnDay = tickets.filter(
-        (t) => t.status === 'DONE' && t.completedAt && t.completedAt.startsWith(datePrefix)
-      ).length;
-
-      days.push({
-        day: dayStr,
-        created: createdCount,
-        processing: processingCountOnDay,
-        done: doneCountOnDay,
-      });
+          (t.code || '').toLowerCase().includes(q) ||
+          (t.title || '').toLowerCase().includes(q) ||
+          (t.departmentName || '').toLowerCase().includes(q) ||
+          (t.creatorName || '').toLowerCase().includes(q) ||
+          (t.creatorPhone || '').toLowerCase().includes(q)
+      );
     }
 
-    return days;
-  }, [tickets]);
+    if (statusFilter === 'PROCESSING') {
+      result = result.filter((t) => PROCESSING_GROUP.includes(t.status));
+    } else if (statusFilter !== 'ALL') {
+      result = result.filter((t) => t.status === statusFilter);
+    }
 
-  // 4. 5 Most recent tickets
-  const recentTickets = useMemo(() => {
-    return [...tickets]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5);
-  }, [tickets]);
+    if (priorityFilter !== 'ALL') {
+      result = result.filter((t) => t.priority === priorityFilter);
+    }
+
+    result.sort((a, b) => {
+      let aVal: any = a[sortField];
+      let bVal: any = b[sortField];
+
+      if (sortField === 'createdAt') {
+        aVal = new Date(a.createdAt).getTime();
+        bVal = new Date(b.createdAt).getTime();
+      } else {
+        aVal = String(aVal || '').toLowerCase();
+        bVal = String(bVal || '').toLowerCase();
+      }
+
+      if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [tickets, searchQuery, statusFilter, priorityFilter, sortField, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / pageSize));
+  const paginatedTickets = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredTickets.slice(start, start + pageSize);
+  }, [filteredTickets, page, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [totalPages, page]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setPriorityFilter('ALL');
+    setPage(1);
+    onFilterChange?.();
+  };
+
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    statusFilter !== 'ALL' ||
+    priorityFilter !== 'ALL';
+
+  const formatDate = (val?: string) => {
+    if (!val) return '—';
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return val;
+      return d.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    } catch {
+      return val;
+    }
+  };
+
+  const getFilterLabel = () => {
+    if (statusFilter === 'PROCESSING') return 'Đang xử lý';
+    if (statusFilter === 'ALL') return null;
+    return STATUS_CONFIG[statusFilter as keyof typeof STATUS_CONFIG]?.label || statusFilter;
+  };
+
+  const currentFilterLabel = getFilterLabel();
 
   return (
-    <div className="space-y-6">
-      {/* 4 KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total */}
-        <div className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-              Tổng số phiếu
+    <div className="space-y-4">
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white rounded-2xl px-4 sm:px-5 py-3 sm:py-4 border border-neutral-200 shadow-2xs">
+        <div className="flex items-baseline gap-2.5 min-w-0">
+          <h1 className="text-base sm:text-lg font-bold text-neutral-900 truncate">
+            {title}
+          </h1>
+          <span className="shrink-0 text-xs font-semibold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+            {filteredTickets.length}
+          </span>
+          {currentFilterLabel && (
+            <span className="shrink-0 text-xs font-bold text-white bg-[#B71C1C] px-2.5 py-0.5 rounded-full">
+              {currentFilterLabel}
             </span>
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 text-neutral-700 flex items-center justify-center">
-              <FileText className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-neutral-900 tracking-tight">
-              {totalCount}
-            </span>
-            <span className="text-xs text-neutral-400">phiếu yêu cầu</span>
-          </div>
-          <div className="mt-2 text-[11px] text-neutral-500 flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-            Toàn bộ các đơn vị trực thuộc
-          </div>
-        </div>
-
-        {/* Chờ điều phối — Clickable */}
-        <div
-          onClick={onGoToDispatch}
-          className="bg-white rounded-2xl p-5 border border-red-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-[#B71C1C] hover:shadow-md transition-all group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#B71C1C] uppercase tracking-wider">
-              Chờ điều phối
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-red-50 text-[#B71C1C] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Clock className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-[#B71C1C] tracking-tight">
-              {newCount}
-            </span>
-            <span className="text-xs text-red-600 font-semibold">cần xử lý ngay</span>
-          </div>
-          <div className="mt-2 text-[11px] text-red-600 flex items-center gap-1 font-medium">
-            <span>Bấm để phân công KTV</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </div>
-        </div>
-
-        {/* Đang xử lý — Clickable ✅ */}
-        <div
-          onClick={onGoToProcessing}
-          className="bg-white rounded-2xl p-5 border border-blue-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-blue-600 hover:shadow-md transition-all group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-              Đang xử lý
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Wrench className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-blue-900 tracking-tight">
-              {processingCount}
-            </span>
-            <span className="text-xs text-neutral-400">phiếu đang thực hiện</span>
-          </div>
-          <div className="mt-2 text-[11px] text-blue-600 flex items-center gap-1 font-medium">
-            <span>Bấm để xem chi tiết xử lý</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </div>
-        </div>
-
-        {/* Hoàn thành — Clickable ✅ */}
-        <div
-          onClick={onGoToDone}
-          className="bg-white rounded-2xl p-5 border border-emerald-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-emerald-600 hover:shadow-md transition-all group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-              Hoàn thành
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black text-emerald-900 tracking-tight">
-              {doneCount}
-            </span>
-            <span className="text-xs text-emerald-600 font-semibold">
-              ({totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0}%)
-            </span>
-          </div>
-          <div className="mt-2 text-[11px] text-emerald-600 flex items-center gap-1 font-medium">
-            <span>Bấm để xem danh sách hoàn thành</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </div>
+          )}
         </div>
       </div>
 
-      {/* 2 Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* PieChart */}
-        <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-neutral-200/90 shadow-2xs flex flex-col justify-between">
-          <div className="mb-2">
-            <h3 className="font-bold text-sm text-neutral-900">Cơ cấu trạng thái phiếu</h3>
-            <p className="text-xs text-neutral-500">Phân bố theo quy trình 6 trạng thái xử lý</p>
-          </div>
-
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusChartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={3}
-                  dataKey="value"
+      {/* FILTER BAR */}
+      {showFilters && (
+        <div className="bg-white rounded-2xl p-3.5 border border-neutral-200 shadow-2xs space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Tìm mã phiếu, tiêu đề, đơn vị, người tạo..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full pl-9 pr-8 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B71C1C]/20 focus:border-[#B71C1C] bg-white"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
                 >
-                  {statusChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: any, name: any) => [`${value} phiếu`, name]}
-                  contentStyle={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    fontSize: '12px',
-                  }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
-                  layout="horizontal"
-                  align="center"
-                  verticalAlign="bottom"
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* BarChart ✅ 3 cột */}
-        <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-neutral-200/90 shadow-2xs flex flex-col justify-between">
-          <div className="mb-2 flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-sm text-neutral-900">Tiến độ xử lý 7 ngày gần nhất</h3>
-              <p className="text-xs text-neutral-500">So sánh số phiếu phát sinh, đang xử lý và hoàn thành</p>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5 font-medium text-neutral-600">
-                <span className="w-3 h-3 rounded bg-[#B71C1C]" /> Phiếu mới
-              </span>
-              <span className="flex items-center gap-1.5 font-medium text-neutral-600">
-                <span className="w-3 h-3 rounded bg-blue-500" /> Đang xử lý
-              </span>
-              <span className="flex items-center gap-1.5 font-medium text-neutral-600">
-                <span className="w-3 h-3 rounded bg-emerald-500" /> Hoàn thành
-              </span>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer whitespace-nowrap"
+              >
+                <X className="w-3.5 h-3.5" />
+                Xóa lọc
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
+            <div className="relative">
+              <Filter className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full pl-8 pr-8 py-2 text-xs font-semibold border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B71C1C]/20 focus:border-[#B71C1C] bg-white cursor-pointer appearance-none"
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="PROCESSING">Đang xử lý (gộp 3 trạng thái)</option>
+                <option value="NEW">Chờ điều phối</option>
+                <option value="ASSIGNED">Đã phân công</option>
+                <option value="WAITING_SUPPLY">Chờ vật tư</option>
+                <option value="DONE">Hoàn thành</option>
+                <option value="CANCELLED">Đã hủy</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+            </div>
+
+            <div className="relative">
+              <Filter className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+              <select
+                value={priorityFilter}
+                onChange={(e) => {
+                  setPriorityFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full pl-8 pr-8 py-2 text-xs font-semibold border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B71C1C]/20 focus:border-[#B71C1C] bg-white cursor-pointer appearance-none"
+              >
+                <option value="ALL">Tất cả ưu tiên</option>
+                <option value="LOW">Thấp</option>
+                <option value="NORMAL">Bình thường</option>
+                <option value="HIGH">Cao</option>
+                <option value="URGENT">Khẩn cấp</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
             </div>
           </div>
-
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={last7DaysData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    fontSize: '12px',
-                  }}
-                />
-                <Bar dataKey="created" name="Phiếu mới" fill="#B71C1C" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="processing" name="Đang xử lý" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="done" name="Hoàn thành" fill="#10B981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
         </div>
-      </div>
+      )}
 
-      {/* 5 Phiếu mới nhất */}
-      <div className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="font-bold text-sm text-neutral-900">5 Phiếu yêu cầu mới nhất</h3>
-            <p className="text-xs text-neutral-500">Cập nhật nhanh tình hình sự cố gần đây nhất</p>
-          </div>
-          <button
-            type="button"
-            onClick={onGoToDispatch}
-            className="text-xs text-[#B71C1C] hover:underline font-bold cursor-pointer"
-          >
-            Đến bảng điều phối →
-          </button>
+      {/* TABLE */}
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-neutral-50 border-b border-neutral-200">
+              <tr>
+                <th
+                  onClick={() => handleSort('code')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1">
+                    Mã phiếu
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('title')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none"
+                >
+                  <div className="flex items-center gap-1">
+                    Tiêu đề
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider whitespace-nowrap">
+                  Đơn vị / Người tạo
+                </th>
+                <th
+                  onClick={() => handleSort('priority')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1">
+                    Ưu tiên
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('status')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1">
+                    Trạng thái
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('createdAt')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1">
+                    Ngày tạo
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                {/* ✅ CỘT THAO TÁC — chỉ hiện khi canManage */}
+                {canManage && (
+                  <th className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider whitespace-nowrap text-center w-24">
+                    Thao tác
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {paginatedTickets.length === 0 ? (
+                <tr>
+                  <td colSpan={canManage ? 7 : 6} className="py-16 text-center">
+                    <FileText className="w-10 h-10 text-neutral-300 mx-auto mb-2" />
+                    <p className="text-sm text-neutral-400 font-medium">
+                      {hasActiveFilters
+                        ? 'Không tìm thấy phiếu phù hợp với bộ lọc'
+                        : 'Chưa có phiếu yêu cầu nào'}
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedTickets.map((t) => (
+                  <tr
+                    key={t.id}
+                    onClick={() => onSelectTicket(t)}
+                    className="hover:bg-neutral-50 cursor-pointer transition-colors"
+                    title="Bấm để xem chi tiết"
+                  >
+                    <td className="px-3 py-3 align-middle">
+                      <span className="font-mono font-bold text-xs bg-neutral-100 text-neutral-800 px-2 py-1 rounded-md border border-neutral-200 whitespace-nowrap">
+                        {t.code}
+                      </span>
+                    </td>
+
+                    <td className="px-3 py-3 align-middle min-w-[280px]">
+                      <div className="font-semibold text-xs text-neutral-900 line-clamp-2">
+                        {t.title}
+                      </div>
+                      {t.category && (
+                        <div className="text-[10px] text-[#B71C1C] font-bold mt-0.5">
+                          {t.category}
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="px-3 py-3 align-middle">
+                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-700">
+                        <Building2 className="w-3 h-3 text-neutral-400 shrink-0" />
+                        <span className="truncate max-w-[160px]">
+                          {t.departmentName || '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 mt-0.5">
+                        <UserIcon className="w-3 h-3 text-neutral-400 shrink-0" />
+                        <span className="truncate max-w-[160px]">
+                          {t.creatorName}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="px-3 py-3 align-middle">
+                      <PriorityBadge priority={t.priority} size="sm" />
+                    </td>
+
+                    <td className="px-3 py-3 align-middle">
+                      <StatusBadge status={t.status} size="sm" />
+                    </td>
+
+                    <td className="px-3 py-3 align-middle">
+                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-600 whitespace-nowrap">
+                        <Calendar className="w-3 h-3 text-neutral-400 shrink-0" />
+                        {formatDate(t.createdAt)}
+                      </div>
+                    </td>
+
+                    {/* ✅ CỘT THAO TÁC — stopPropagation để không mở modal chi tiết */}
+                    {canManage && (
+                      <td className="px-3 py-3 align-middle text-center whitespace-nowrap">
+                        <div
+                          className="flex items-center justify-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => onEdit?.(t)}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                            title="Sửa phiếu"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDelete?.(t)}
+                            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Xóa phiếu"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
-        <div className="divide-y divide-neutral-100">
-          {recentTickets.map((t) => (
-            <div
-              key={t.id}
-              onClick={() => onViewTicket(t)}
-              className="py-3 px-2 hover:bg-neutral-50/80 rounded-xl transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-mono font-bold text-xs bg-neutral-100 text-neutral-800 px-2 py-1 rounded-md">
-                  {t.code}
-                </span>
-                <div>
-                  <h4 className="text-xs font-bold text-neutral-900 line-clamp-1 hover:text-[#B71C1C]">
-                    {t.title}
-                  </h4>
-                  <p className="text-[11px] text-neutral-500 mt-0.5">
-                    {t.departmentName} • Người tạo: {t.creatorName} ({t.creatorPhone})
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                <PriorityBadge priority={t.priority} size="sm" />
-                <StatusBadge status={t.status} size="sm" />
-              </div>
+        {/* PAGINATION */}
+        {filteredTickets.length > 0 && (
+          <div className="border-t border-neutral-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 bg-neutral-50/50">
+            <div className="text-xs text-neutral-600">
+              Hiển thị{' '}
+              <span className="font-bold">
+                {(page - 1) * pageSize + 1}
+              </span>{' '}
+              -{' '}
+              <span className="font-bold">
+                {Math.min(page * pageSize, filteredTickets.length)}
+              </span>{' '}
+              trên{' '}
+              <span className="font-bold">{filteredTickets.length}</span> phiếu
             </div>
-          ))}
-        </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="px-2 py-1 text-xs font-semibold border border-neutral-300 rounded-md bg-white cursor-pointer"
+              >
+                <option value={10}>10 / trang</option>
+                <option value={20}>20 / trang</option>
+                <option value={50}>50 / trang</option>
+                <option value={100}>100 / trang</option>
+              </select>
+
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="px-2.5 py-1 text-xs font-bold rounded-md border border-neutral-300 bg-white hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                ←
+              </button>
+
+              <span className="text-xs font-bold text-neutral-700 px-2">
+                {page} / {totalPages}
+              </span>
+
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="px-2.5 py-1 text-xs font-bold rounded-md border border-neutral-300 bg-white hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+export default TicketList;

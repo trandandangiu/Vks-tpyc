@@ -5,8 +5,8 @@ import { Ticket, User, Department, AuditLog, TicketStatus, SupplyItem } from '..
 import { Header } from '../components/common/Header';
 import { Sidebar, AdminTab } from '../components/common/Sidebar';
 import { AdminOverview } from '../components/admin/AdminOverview';
-import { TicketList } from '../components/tickets/TicketList';
 import { TicketForm } from '../components/tickets/TicketForm';
+import { TicketList } from '../components/tickets/TicketList'; // ✅ THÊM DÒNG NÀY (fix trang trắng)
 import { DispatchBoard } from '../components/admin/DispatchBoard';
 import { UserManager } from '../components/admin/UserManager';
 import { DeptManager } from '../components/admin/DeptManager';
@@ -19,6 +19,7 @@ import { Modal } from '../components/common/Modal';
 import { useToast } from '../components/common/Toast';
 import { useAuth } from '../context/AuthContext';
 import { PriorityBadge } from '../components/common/StatusBadge';
+import { TicketEditModal } from '../components/tickets/TicketEditModal';
 import { Award, Wrench, User as UserIcon, Phone, Building2, ExternalLink, X } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -28,19 +29,20 @@ export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Data states
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
-  // Selected ticket for modal / detail
   const [viewingTicket, setViewingTicket] = useState<Ticket | null>(null);
   const [ratingTicket, setRatingTicket] = useState<Ticket | null>(null);
   const [isKpiModalOpen, setIsKpiModalOpen] = useState(false);
-  const [ticketListStatusFilter, setTicketListStatusFilter] = useState<string>('ALL');
-  const [ticketListPriorityFilter, setTicketListPriorityFilter] = useState<string>('ALL');
-  // For Technical Process Tab
+
+  // ✅ State filter cho TicketList — sẽ được set từ KPI cards
+  const [ticketListFilter, setTicketListFilter] = useState<string>('ALL');
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+
+
   const [selectedProcessTicketId, setSelectedProcessTicketId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -63,17 +65,13 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    // Polling 30s thay cho realtime storage event
     const timer = setInterval(loadData, 30000);
     return () => clearInterval(timer);
   }, []);
 
-
   const newTicketsCount = tickets.filter((t) => t.status === 'NEW').length;
-  // Without role restriction, all active users can be assigned
   const allStaff = users.filter((u) => u.active);
 
-  // Group queue for process tab
   const queueGroups = useMemo(() => {
     return [
       {
@@ -107,7 +105,6 @@ export const AdminDashboard: React.FC = () => {
     ];
   }, [tickets]);
 
-  // Selected process ticket
   const activeProcessTicket = useMemo(() => {
     if (selectedProcessTicketId) {
       const found = tickets.find((t) => t.id === selectedProcessTicketId);
@@ -116,6 +113,21 @@ export const AdminDashboard: React.FC = () => {
     const pending = tickets.find((t) => t.status !== 'DONE' && t.status !== 'CANCELLED' && t.status !== 'NEW');
     return pending || tickets[0] || null;
   }, [tickets, selectedProcessTicketId]);
+
+  // ✅ HANDLER MỚI: Từ KPI card → chuyển sang tab "Tất cả phiếu" với filter
+  const handleGoToAllTickets = (statusFilter: string = 'ALL') => {
+    setTicketListFilter(statusFilter);
+    setActiveTab('all-tickets');
+  };
+
+  // ✅ Handler riêng cho Sidebar: khi user bấm menu "Tất cả phiếu" từ sidebar
+  // thì reset filter về ALL
+  const handleSidebarTabChange = (tab: AdminTab) => {
+    if (tab === 'all-tickets') {
+      setTicketListFilter('ALL');
+    }
+    setActiveTab(tab);
+  };
 
   const handleSaveProcess = (updates: {
     status: TicketStatus;
@@ -156,9 +168,57 @@ export const AdminDashboard: React.FC = () => {
     loadData();
   };
 
+  const handleDeleteTicket = async (ticket: Ticket) => {
+    if (!confirm(`⚠️ Bạn có chắc muốn XÓA VĨNH VIỄN phiếu [${ticket.code}]?\n\n"${ticket.title}"\n\nHành động này không thể hoàn tác!`)) {
+      return;
+    }
+
+    try {
+      const res = await apiClient.deleteTicket(ticket.id);
+      if (res.success) {
+        toast.success(`Đã xóa phiếu [${ticket.code}]`);
+        loadData();
+      } else {
+        toast.error(res.message || 'Lỗi xóa phiếu');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi kết nối');
+    }
+  };
+
+  // 4. SỬA KHỐI RENDER TicketList (trong activeTab === 'all-tickets')
+  {
+    activeTab === 'all-tickets' && (
+      <TicketList
+        tickets={tickets}
+        onSelectTicket={(t) => setViewingTicket(t)}
+        title={
+          ticketListFilter === 'PROCESSING'
+            ? 'Phiếu đang xử lý'
+            : ticketListFilter === 'DONE'
+              ? 'Phiếu đã hoàn thành'
+              : 'Tất cả phiếu yêu cầu kỹ thuật toàn viện'
+        }
+        showFilters={true}
+        initialStatusFilter={ticketListFilter}
+        onFilterChange={() => setTicketListFilter('ALL')}
+        onEdit={(t) => setEditingTicket(t)}       // ✅ THÊM
+        onDelete={handleDeleteTicket}             // ✅ THÊM
+        canManage={user?.role === 'ADMIN'}        // ✅ THÊM — chỉ ADMIN
+      />
+    )
+  }
+
+  // 5. THÊM MODAL — đặt cạnh RatingModal
+  <TicketEditModal
+    isOpen={!!editingTicket}
+    onClose={() => setEditingTicket(null)}
+    ticket={editingTicket}
+    onSaved={loadData}
+  />
+
   return (
     <div className="min-h-screen bg-[#F5F5F0] flex flex-col">
-      {/* Header */}
       <Header
         showMenuButton={true}
         onMenuToggle={() => setIsMobileSidebarOpen(true)}
@@ -175,11 +235,10 @@ export const AdminDashboard: React.FC = () => {
         }
       />
 
-      {/* Main Shell: Sidebar + Content */}
       <div className="flex-1 flex w-full">
         <Sidebar
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleSidebarTabChange}  // ✅ DÙNG HANDLER MỚI
           newTicketsCount={newTicketsCount}
           isOpenMobile={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -193,8 +252,7 @@ export const AdminDashboard: React.FC = () => {
                 tickets={tickets}
                 onViewTicket={(t) => setViewingTicket(t)}
                 onGoToDispatch={() => setActiveTab('dispatch')}
-                onGoToProcessing={() => setActiveTab('all-tickets')}  // ✅ THÊM — chuyển sang tab All Tickets
-                onGoToDone={() => setActiveTab('all-tickets')}
+                onGoToAllTickets={handleGoToAllTickets}  // ✅ TRUYỀN HANDLER MỚI
               />
             )}
 
@@ -204,21 +262,28 @@ export const AdminDashboard: React.FC = () => {
                 <TicketForm
                   onSuccess={() => {
                     loadData();
+                    setTicketListFilter('ALL');
                     setActiveTab('all-tickets');
                   }}
                 />
               </div>
             )}
 
-            {/* Tab 3: All Tickets */}
+            {/* Tab 3: All Tickets — ✅ NHẬN FILTER TỪ KPI */}
             {activeTab === 'all-tickets' && (
               <TicketList
                 tickets={tickets}
                 onSelectTicket={(t) => setViewingTicket(t)}
-                title="Tất cả phiếu yêu cầu kỹ thuật toàn viện"
+                title={
+                  ticketListFilter === 'PROCESSING'
+                    ? 'Phiếu đang xử lý'
+                    : ticketListFilter === 'DONE'
+                      ? 'Phiếu đã hoàn thành'
+                      : 'Tất cả phiếu yêu cầu kỹ thuật toàn viện'
+                }
                 showFilters={true}
-                initialStatusFilter={ticketListStatusFilter}   // ✅ THÊM prop
-                onFilterChange={() => setTicketListStatusFilter('ALL')} /
+                initialStatusFilter={ticketListFilter}
+                onFilterChange={() => setTicketListFilter('ALL')}
               />
             )}
 
@@ -234,7 +299,6 @@ export const AdminDashboard: React.FC = () => {
             {/* Tab 5: Technical Resolution Workspace */}
             {activeTab === 'process' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start animate-in fade-in duration-200">
-                {/* Column 1: Queue (4 cols) */}
                 <div className="lg:col-span-4 space-y-4">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
@@ -305,11 +369,9 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Column 2: Detail panel & Process Form (8 cols) */}
                 <div className="lg:col-span-8 space-y-5">
                   {activeProcessTicket ? (
                     <div className="space-y-5">
-                      {/* Ticket sender info */}
                       <div className="bg-white rounded-2xl p-6 border border-neutral-200/90 shadow-2xs space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 pb-3">
                           <div>
@@ -329,7 +391,6 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Sender details */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-neutral-50 p-3.5 rounded-xl border border-neutral-200/60 text-xs">
                           <div>
                             <span className="text-neutral-400 block flex items-center gap-1">
@@ -362,42 +423,13 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Description */}
                         <div>
                           <p className="text-xs text-neutral-700 bg-neutral-50/70 p-3 rounded-xl border border-neutral-200/60 whitespace-pre-wrap leading-relaxed">
                             {activeProcessTicket.description}
                           </p>
                         </div>
-
-                        {/* BEFORE Images */}
-                        {activeProcessTicket.beforeImages && activeProcessTicket.beforeImages.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                              Ảnh hiện trạng ban đầu (BEFORE)
-                            </h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                              {activeProcessTicket.beforeImages.map((img, idx) => (
-                                <div
-                                  key={idx}
-                                  onClick={() => setPreviewImage(img)}
-                                  className="group relative aspect-video rounded-xl overflow-hidden border border-neutral-200 cursor-pointer bg-neutral-100"
-                                >
-                                  <img
-                                    src={img}
-                                    alt={`Hiện trạng ${idx + 1}`}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                  />
-                                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                                    <ExternalLink className="w-4 h-4" />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
 
-                      {/* Technical Processing Form */}
                       <TicketProcessForm
                         ticket={activeProcessTicket}
                         onSave={handleSaveProcess}
@@ -415,7 +447,6 @@ export const AdminDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Tab 6: Users Management */}
             {activeTab === 'users' && (
               <UserManager
                 users={users}
@@ -424,7 +455,6 @@ export const AdminDashboard: React.FC = () => {
               />
             )}
 
-            {/* Tab 7: Departments Management */}
             {activeTab === 'departments' && (
               <DeptManager
                 departments={departments}
@@ -432,7 +462,6 @@ export const AdminDashboard: React.FC = () => {
               />
             )}
 
-            {/* Tab 8: Audit Logs */}
             {activeTab === 'audit-logs' && (
               <AuditLogTable logs={auditLogs} />
             )}
@@ -440,7 +469,6 @@ export const AdminDashboard: React.FC = () => {
         </main>
       </div>
 
-      {/* Modal View Ticket Detail */}
       <Modal
         isOpen={!!viewingTicket}
         onClose={() => setViewingTicket(null)}
@@ -462,7 +490,6 @@ export const AdminDashboard: React.FC = () => {
         )}
       </Modal>
 
-      {/* Modal Rating */}
       <RatingModal
         isOpen={!!ratingTicket}
         onClose={() => setRatingTicket(null)}
@@ -470,7 +497,6 @@ export const AdminDashboard: React.FC = () => {
         onRated={loadData}
       />
 
-      {/* Modal KPI */}
       <TechnicalKpiModal
         isOpen={isKpiModalOpen}
         onClose={() => setIsKpiModalOpen(false)}
@@ -478,7 +504,6 @@ export const AdminDashboard: React.FC = () => {
         technicianName={user?.fullName || 'Cán bộ'}
       />
 
-      {/* Lightbox Preview Image */}
       {previewImage && (
         <div
           className="fixed inset-0 z-60 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"

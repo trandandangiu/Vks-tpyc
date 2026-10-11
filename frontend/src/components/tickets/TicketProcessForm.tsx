@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Ticket, TicketStatus, SupplyItem } from '../../types';
 import { Clock, Wrench, Package, Plus, Trash2, Upload, X, Check, Save } from 'lucide-react';
 import { useToast } from '../common/Toast';
-import { apiClient } from '@/src/services/apiClient';
+import { apiClient } from '../../services/apiClient';
 
 interface TicketProcessFormProps {
   ticket: Ticket;
@@ -230,8 +230,8 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
               <div
                 key={item.name}
                 className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-colors ${selected
-                    ? 'bg-blue-50/70 border-blue-200 text-neutral-900'
-                    : 'bg-neutral-50/70 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                  ? 'bg-blue-50/70 border-blue-200 text-neutral-900'
+                  : 'bg-neutral-50/70 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
                   }`}
               >
                 <label className="flex items-center gap-2 cursor-pointer flex-1">
@@ -363,8 +363,8 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${isDragging
-              ? 'border-blue-500 bg-blue-50/50'
-              : 'border-neutral-300 hover:border-blue-400 bg-neutral-50/50'
+            ? 'border-blue-500 bg-blue-50/50'
+            : 'border-neutral-300 hover:border-blue-400 bg-neutral-50/50'
             }`}
         >
           <Upload className="w-6 h-6 text-neutral-400 mx-auto mb-1.5" />

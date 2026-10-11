@@ -19,7 +19,6 @@ import {
   Wrench,
   CheckCircle2,
   TrendingUp,
-  AlertTriangle,
   ArrowUpRight,
 } from 'lucide-react';
 import { StatusBadge, PriorityBadge } from '../common/StatusBadge';
@@ -28,18 +27,15 @@ interface AdminOverviewProps {
   tickets: Ticket[];
   onViewTicket: (ticket: Ticket) => void;
   onGoToDispatch: () => void;
-  onGoToProcessing: () => void;   // ✅ THÊM
-  onGoToDone: () => void;         // ✅ THÊM
+  onGoToAllTickets: (statusFilter?: string) => void; // ✅ SỬA: nhận statusFilter
 }
 
 export const AdminOverview: React.FC<AdminOverviewProps> = ({
   tickets,
   onViewTicket,
   onGoToDispatch,
-  onGoToProcessing,
-  onGoToDone,
+  onGoToAllTickets,
 }) => {
-  // 1. KPI counts
   const totalCount = tickets.length;
   const newCount = tickets.filter((t) => t.status === 'NEW').length;
   const processingCount = tickets.filter(
@@ -47,7 +43,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   ).length;
   const doneCount = tickets.filter((t) => t.status === 'DONE').length;
 
-  // 2. Status distribution for PieChart
   const statusChartData = useMemo(() => {
     const counts: Record<string, number> = {
       NEW: 0,
@@ -65,12 +60,12 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     });
 
     const colors: Record<string, string> = {
-      NEW: '#94a3b8', // slate-400
-      ASSIGNED: '#a855f7', // purple-500
-      PROCESSING: '#3b82f6', // blue-500
-      WAITING_SUPPLY: '#f59e0b', // amber-500
-      DONE: '#10b981', // emerald-500
-      CANCELLED: '#f43f5e', // rose-500
+      NEW: '#94a3b8',
+      ASSIGNED: '#a855f7',
+      PROCESSING: '#3b82f6',
+      WAITING_SUPPLY: '#f59e0b',
+      DONE: '#10b981',
+      CANCELLED: '#f43f5e',
     };
 
     return Object.entries(counts).map(([statusKey, count]) => ({
@@ -80,7 +75,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     }));
   }, [tickets]);
 
-  // 3. 7-day BarChart data (calculated dynamically from past 7 days)
   const last7DaysData = useMemo(() => {
     const days: Array<{ day: string; created: number; processing: number; done: number }> = [];
     const now = new Date();
@@ -97,7 +91,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
 
       const createdCount = tickets.filter((t) => t.createdAt.startsWith(datePrefix)).length;
 
-      // ✅ Đếm phiếu đang xử lý trong ngày (dựa vào updatedAt)
       const processingCountOnDay = tickets.filter(
         (t) =>
           (t.status === 'PROCESSING' || t.status === 'ASSIGNED' || t.status === 'WAITING_SUPPLY') &&
@@ -120,7 +113,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     return days;
   }, [tickets]);
 
-  // 4. 5 Most recent tickets
   const recentTickets = useMemo(() => {
     return [...tickets]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -131,13 +123,16 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     <div className="space-y-6">
       {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total */}
-        <div className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs relative overflow-hidden">
+        {/* Total — Click → ALL */}
+        <div
+          onClick={() => onGoToAllTickets('ALL')}
+          className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-neutral-500 hover:shadow-md transition-all group"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
               Tổng số phiếu
             </span>
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 text-neutral-700 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-neutral-100 text-neutral-700 flex items-center justify-center group-hover:scale-110 transition-transform">
               <FileText className="w-5 h-5" />
             </div>
           </div>
@@ -153,7 +148,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* Chờ điều phối (Clickable) */}
+        {/* Chờ điều phối — Click → Dispatch */}
         <div
           onClick={onGoToDispatch}
           className="bg-white rounded-2xl p-5 border border-red-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-[#B71C1C] hover:shadow-md transition-all group"
@@ -178,9 +173,9 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* Đang xử lý (Clickable) ✅ */}
+        {/* Đang xử lý — Click → All Tickets filter PROCESSING */}
         <div
-          onClick={onGoToProcessing}
+          onClick={() => onGoToAllTickets('PROCESSING')}
           className="bg-white rounded-2xl p-5 border border-blue-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-blue-600 hover:shadow-md transition-all group"
         >
           <div className="flex items-center justify-between">
@@ -203,9 +198,9 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* Hoàn thành (Clickable) ✅ */}
+        {/* Hoàn thành — Click → All Tickets filter DONE */}
         <div
-          onClick={onGoToDone}
+          onClick={() => onGoToAllTickets('DONE')}
           className="bg-white rounded-2xl p-5 border border-emerald-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-emerald-600 hover:shadow-md transition-all group"
         >
           <div className="flex items-center justify-between">
@@ -231,9 +226,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         </div>
       </div>
 
-      {/* 2 Charts: PieChart Trạng thái + BarChart 7 ngày */}
+      {/* ... phần 2 charts và recent tickets giữ nguyên ... */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* PieChart: Trạng thái phiếu (5 cols) */}
         <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-neutral-200/90 shadow-2xs flex flex-col justify-between">
           <div className="mb-2">
             <h3 className="font-bold text-sm text-neutral-900">Cơ cấu trạng thái phiếu</h3>
@@ -276,7 +270,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* ✅ BarChart ĐÃ ĐỔI: Stacked Bar + Line overlay (7 cols) */}
         <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-neutral-200/90 shadow-2xs flex flex-col justify-between">
           <div className="mb-2 flex items-center justify-between">
             <div>
@@ -328,7 +321,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         </div>
       </div>
 
-      {/* 5 Phiếu mới nhất */}
       <div className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs">
         <div className="flex items-center justify-between mb-4">
           <div>

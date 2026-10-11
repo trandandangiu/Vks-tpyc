@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════╗
 ║  DỰ ÁN: VKS-QLCV-v3 — FE
-║  Xuất ngày: 2026-10-09 16:23:00
+║  Xuất ngày: 2026-10-11 08:52:18
 ╚══════════════════════════════════════════════════════════╝
 
 ════════════════════════════════════════════════════════════
@@ -277,6 +277,7 @@ import {
   YAxis,
   Tooltip,
   Legend,
+  CartesianGrid,
 } from 'recharts';
 import {
   FileText,
@@ -293,12 +294,16 @@ interface AdminOverviewProps {
   tickets: Ticket[];
   onViewTicket: (ticket: Ticket) => void;
   onGoToDispatch: () => void;
+  onGoToProcessing: () => void;   // ✅ THÊM
+  onGoToDone: () => void;         // ✅ THÊM
 }
 
 export const AdminOverview: React.FC<AdminOverviewProps> = ({
   tickets,
   onViewTicket,
   onGoToDispatch,
+  onGoToProcessing,
+  onGoToDone,
 }) => {
   // 1. KPI counts
   const totalCount = tickets.length;
@@ -343,16 +348,29 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
 
   // 3. 7-day BarChart data (calculated dynamically from past 7 days)
   const last7DaysData = useMemo(() => {
-    const days: Array<{ day: string; created: number; done: number }> = [];
+    const days: Array<{ day: string; created: number; processing: number; done: number }> = [];
     const now = new Date();
 
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const dayStr = d.toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' });
+      const dayStr = d.toLocaleDateString('vi-VN', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'numeric',
+      });
       const datePrefix = d.toISOString().slice(0, 10);
 
       const createdCount = tickets.filter((t) => t.createdAt.startsWith(datePrefix)).length;
+
+      // ✅ Đếm phiếu đang xử lý trong ngày (dựa vào updatedAt)
+      const processingCountOnDay = tickets.filter(
+        (t) =>
+          (t.status === 'PROCESSING' || t.status === 'ASSIGNED' || t.status === 'WAITING_SUPPLY') &&
+          t.updatedAt &&
+          t.updatedAt.startsWith(datePrefix)
+      ).length;
+
       const doneCountOnDay = tickets.filter(
         (t) => t.status === 'DONE' && t.completedAt && t.completedAt.startsWith(datePrefix)
       ).length;
@@ -360,6 +378,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       days.push({
         day: dayStr,
         created: createdCount,
+        processing: processingCountOnDay,
         done: doneCountOnDay,
       });
     }
@@ -400,10 +419,10 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* Chờ điều phối (Clickable to dispatch) */}
+        {/* Chờ điều phối (Clickable) */}
         <div
           onClick={onGoToDispatch}
-          className="bg-white rounded-2xl p-5 border border-red-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-[#B71C1C] transition-all group"
+          className="bg-white rounded-2xl p-5 border border-red-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-[#B71C1C] hover:shadow-md transition-all group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#B71C1C] uppercase tracking-wider">
@@ -425,13 +444,16 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* Đang xử lý */}
-        <div className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs relative overflow-hidden">
+        {/* Đang xử lý (Clickable) ✅ */}
+        <div
+          onClick={onGoToProcessing}
+          className="bg-white rounded-2xl p-5 border border-blue-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-blue-600 hover:shadow-md transition-all group"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
               Đang xử lý
             </span>
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
               <Wrench className="w-5 h-5" />
             </div>
           </div>
@@ -441,18 +463,22 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             </span>
             <span className="text-xs text-neutral-400">phiếu đang thực hiện</span>
           </div>
-          <div className="mt-2 text-[11px] text-neutral-500">
-            Bao gồm tiếp nhận, sửa & chờ vật tư
+          <div className="mt-2 text-[11px] text-blue-600 flex items-center gap-1 font-medium">
+            <span>Bấm để xem chi tiết xử lý</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </div>
         </div>
 
-        {/* Hoàn thành */}
-        <div className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs relative overflow-hidden">
+        {/* Hoàn thành (Clickable) ✅ */}
+        <div
+          onClick={onGoToDone}
+          className="bg-white rounded-2xl p-5 border border-emerald-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-emerald-600 hover:shadow-md transition-all group"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
               Hoàn thành
             </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
               <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
@@ -464,8 +490,9 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
               ({totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0}%)
             </span>
           </div>
-          <div className="mt-2 text-[11px] text-neutral-500">
-            Tỉ lệ hoàn thành nhiệm vụ cao
+          <div className="mt-2 text-[11px] text-emerald-600 flex items-center gap-1 font-medium">
+            <span>Bấm để xem danh sách hoàn thành</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </div>
         </div>
       </div>
@@ -515,16 +542,23 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* BarChart: 7 ngày gần nhất (7 cols) */}
+        {/* ✅ BarChart ĐÃ ĐỔI: Stacked Bar + Line overlay (7 cols) */}
         <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-neutral-200/90 shadow-2xs flex flex-col justify-between">
           <div className="mb-2 flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-sm text-neutral-900">Biểu đồ tiến độ 7 ngày</h3>
-              <p className="text-xs text-neutral-500">So sánh số phiếu phát sinh và hoàn thành</p>
+              <h3 className="font-bold text-sm text-neutral-900">
+                Tiến độ xử lý 7 ngày gần nhất
+              </h3>
+              <p className="text-xs text-neutral-500">
+                Cột chồng: Phiếu mới + Đang xử lý — Đường: Tỉ lệ hoàn thành
+              </p>
             </div>
             <div className="flex items-center gap-3 text-xs">
               <span className="flex items-center gap-1.5 font-medium text-neutral-600">
                 <span className="w-3 h-3 rounded bg-[#B71C1C]" /> Phiếu mới
+              </span>
+              <span className="flex items-center gap-1.5 font-medium text-neutral-600">
+                <span className="w-3 h-3 rounded bg-blue-500" /> Đang xử lý
               </span>
               <span className="flex items-center gap-1.5 font-medium text-neutral-600">
                 <span className="w-3 h-3 rounded bg-emerald-500" /> Hoàn thành
@@ -534,7 +568,11 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={last7DaysData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart
+                data={last7DaysData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip
@@ -545,7 +583,10 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                     fontSize: '12px',
                   }}
                 />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
+
                 <Bar dataKey="created" name="Phiếu mới" fill="#B71C1C" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="processing" name="Đang xử lý" fill="#3B82F6" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="done" name="Hoàn thành" fill="#10B981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -622,11 +663,10 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs }) => {
 
   const filteredLogs = logs.filter((log) => {
     const matchSearch =
-      log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.userName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.entity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.ip.toLowerCase().includes(searchTerm.toLowerCase());
-
+      (log.entityType || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.ipAddress || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchLevel = levelFilter === 'ALL' || log.level === levelFilter;
 
     return matchSearch && matchLevel;
@@ -742,21 +782,11 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs }) => {
               ) : (
                 filteredLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-neutral-50/80 transition-colors">
-                    <td className="py-3 px-4 text-neutral-500 whitespace-nowrap font-mono text-[11px]">
-                      {formatDate(log.timestamp)}
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-neutral-800 whitespace-nowrap">
-                      {log.user}
-                    </td>
-                    <td className="py-3 px-4 text-neutral-700 leading-relaxed">
-                      {log.action}
-                    </td>
-                    <td className="py-3 px-4 text-neutral-600 font-mono text-[11px] truncate max-w-[160px]">
-                      {log.entity}
-                    </td>
-                    <td className="py-3 px-4 text-neutral-500 font-mono text-[11px]">
-                      {log.ip}
-                    </td>
+                    <td>{formatDate(log.createdAt)}</td>
+                    <td>{log.userName}</td>
+                    <td>{log.action}</td>
+                    <td>{log.entityType} {log.entityId && `(${log.entityId})`}</td>
+                    <td>{log.ipAddress}</td>
                     <td className="py-3 px-4 text-center whitespace-nowrap">
                       {getLevelBadge(log.level)}
                     </td>
@@ -1491,7 +1521,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
                     </span>
                   </td>
                   <td className="py-3 px-4 text-neutral-600 max-w-[200px] truncate">
-                    {u.departmentName || '---'}
+                    {u.department?.name || u.departmentName || '---'}
                   </td>
                   <td className="py-3 px-4 text-neutral-600">
                     <div>{u.email || '---'}</div>
@@ -4152,300 +4182,457 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
 FILE: frontend/src/components/tickets/TicketList.tsx
 ════════════════════════════════════════════════════════════
 
+// src/components/tickets/TicketList.tsx
 import React, { useState, useMemo } from 'react';
-import { Ticket, TicketStatus, TicketPriority } from '../../types';
+import { Ticket, STATUS_CONFIG } from '../../types';
 import { StatusBadge, PriorityBadge } from '../common/StatusBadge';
-import { Search, Filter, Eye, ArrowUpDown, Calendar, Building2, User } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  ChevronDown,
+  FileText,
+  Calendar,
+  User as UserIcon,
+  Building2,
+  Clock,
+  ArrowUpDown,
+  X,
+} from 'lucide-react';
 
 interface TicketListProps {
   tickets: Ticket[];
   onSelectTicket: (ticket: Ticket) => void;
   title?: string;
   showFilters?: boolean;
+  initialStatusFilter?: string;
+  onFilterChange?: () => void;
 }
+
+type SortField = 'code' | 'title' | 'priority' | 'status' | 'createdAt';
+type SortDir = 'asc' | 'desc';
 
 export const TicketList: React.FC<TicketListProps> = ({
   tickets,
   onSelectTicket,
   title = 'Danh sách phiếu yêu cầu',
   showFilters = true,
+  initialStatusFilter = 'ALL',
+  onFilterChange,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
-  const [deptFilter, setDeptFilter] = useState<string>('ALL');
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  // Extract unique departments from tickets
-  const departments = useMemo(() => {
-    const map = new Map<string, string>();
-    tickets.forEach((t) => {
-      if (t.departmentName) map.set(t.departmentName, t.departmentName);
-    });
-    return Array.from(map.values());
-  }, [tickets]);
+  // Reset filter khi prop initialStatusFilter thay đổi
+  React.useEffect(() => {
+    setStatusFilter(initialStatusFilter);
+    setPage(1);
+  }, [initialStatusFilter]);
 
-  // Filtered tickets
+  // ============================================
+  // FILTER + SORT
+  // ============================================
   const filteredTickets = useMemo(() => {
-    return tickets.filter((t) => {
-      const matchSearch =
-        t.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.creatorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (t.assigneeName && t.assigneeName.toLowerCase().includes(searchTerm.toLowerCase()));
+    let result = [...tickets];
 
-      const matchStatus = statusFilter === 'ALL' || t.status === statusFilter;
-      const matchPriority = priorityFilter === 'ALL' || t.priority === priorityFilter;
-      const matchDept = deptFilter === 'ALL' || t.departmentName === deptFilter;
+    // 1. Search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (t) =>
+          (t.code || '').toLowerCase().includes(q) ||
+          (t.title || '').toLowerCase().includes(q) ||
+          (t.departmentName || '').toLowerCase().includes(q) ||
+          (t.creatorName || '').toLowerCase().includes(q) ||
+          (t.creatorPhone || '').toLowerCase().includes(q)
+      );
+    }
 
-      return matchSearch && matchStatus && matchPriority && matchDept;
+    // 2. Filter status
+    if (statusFilter !== 'ALL') {
+      result = result.filter((t) => t.status === statusFilter);
+    }
+
+    // 3. Filter priority
+    if (priorityFilter !== 'ALL') {
+      result = result.filter((t) => t.priority === priorityFilter);
+    }
+
+    // 4. Sort
+    result.sort((a, b) => {
+      let aVal: any = a[sortField];
+      let bVal: any = b[sortField];
+
+      if (sortField === 'createdAt') {
+        aVal = new Date(a.createdAt).getTime();
+        bVal = new Date(b.createdAt).getTime();
+      } else {
+        aVal = String(aVal || '').toLowerCase();
+        bVal = String(bVal || '').toLowerCase();
+      }
+
+      if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+      return 0;
     });
-  }, [tickets, searchTerm, statusFilter, priorityFilter, deptFilter]);
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '---';
+    return result;
+  }, [tickets, searchQuery, statusFilter, priorityFilter, sortField, sortDir]);
+
+  // ============================================
+  // PAGINATION
+  // ============================================
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / pageSize));
+  const paginatedTickets = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredTickets.slice(start, start + pageSize);
+  }, [filteredTickets, page, pageSize]);
+
+  React.useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [totalPages, page]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setPriorityFilter('ALL');
+    setPage(1);
+    onFilterChange?.();
+  };
+
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    statusFilter !== 'ALL' ||
+    priorityFilter !== 'ALL';
+
+  // Format ngày
+  const formatDate = (val?: string) => {
+    if (!val) return '—';
     try {
-      return new Date(dateStr).toLocaleDateString('vi-VN', {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return val;
+      return d.toLocaleDateString('vi-VN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
       });
     } catch {
-      return dateStr;
+      return val;
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200/90 shadow-xs overflow-hidden">
-      {/* Header & Filters */}
-      <div className="p-5 border-b border-neutral-100 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-base font-bold text-neutral-900">{title}</h3>
-            <p className="text-xs text-neutral-500">
-              Tổng số {filteredTickets.length} / {tickets.length} phiếu
-            </p>
-          </div>
-
-          {/* Search Box */}
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm mã, tiêu đề, người tạo..."
-              className="w-full pl-9 pr-3.5 py-2 text-xs bg-neutral-50 border border-neutral-200 focus:border-[#B71C1C] focus:bg-white rounded-xl focus:outline-none transition-all"
-            />
-          </div>
+    <div className="space-y-4">
+      {/* ═══ HEADER ═══ */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white rounded-2xl px-4 sm:px-5 py-3 sm:py-4 border border-neutral-200 shadow-2xs">
+        <div className="flex items-baseline gap-2.5 min-w-0">
+          <h1 className="text-base sm:text-lg font-bold text-neutral-900 truncate">
+            {title}
+          </h1>
+          <span className="shrink-0 text-xs font-semibold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+            {filteredTickets.length}
+          </span>
         </div>
+      </div>
 
-        {/* Filter Row */}
-        {showFilters && (
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-neutral-100">
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-medium mr-1">
-              <Filter className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Lọc:</span>
+      {/* ═══ FILTER BAR ═══ */}
+      {showFilters && (
+        <div className="bg-white rounded-2xl p-3.5 border border-neutral-200 shadow-2xs space-y-3">
+          {/* Row 1: Search */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Tìm mã phiếu, tiêu đề, đơn vị, người tạo..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full pl-9 pr-8 py-2 text-xs border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B71C1C]/20 focus:border-[#B71C1C] bg-white"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs bg-neutral-50 border border-neutral-200 rounded-xl px-2.5 py-1.5 text-neutral-700 font-medium focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="NEW">Chờ điều phối</option>
-              <option value="ASSIGNED">Đã phân công</option>
-              <option value="PROCESSING">Đang xử lý</option>
-              <option value="WAITING_SUPPLY">Chờ vật tư</option>
-              <option value="DONE">Hoàn thành</option>
-              <option value="CANCELLED">Đã hủy</option>
-            </select>
-
-            {/* Priority Filter */}
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="text-xs bg-neutral-50 border border-neutral-200 rounded-xl px-2.5 py-1.5 text-neutral-700 font-medium focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả mức độ</option>
-              <option value="LOW">Thấp</option>
-              <option value="NORMAL">Bình thường</option>
-              <option value="HIGH">Cao</option>
-              <option value="URGENT">Khẩn cấp</option>
-            </select>
-
-            {/* Dept Filter */}
-            {departments.length > 0 && (
-              <select
-                value={deptFilter}
-                onChange={(e) => setDeptFilter(e.target.value)}
-                className="text-xs bg-neutral-50 border border-neutral-200 rounded-xl px-2.5 py-1.5 text-neutral-700 font-medium focus:outline-none cursor-pointer max-w-[200px] truncate"
-              >
-                <option value="ALL">Tất cả đơn vị</option>
-                {departments.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {(statusFilter !== 'ALL' || priorityFilter !== 'ALL' || deptFilter !== 'ALL' || searchTerm) && (
+            {hasActiveFilters && (
               <button
                 type="button"
-                onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('ALL');
-                  setPriorityFilter('ALL');
-                  setDeptFilter('ALL');
-                }}
-                className="text-xs text-[#B71C1C] hover:underline font-semibold ml-auto cursor-pointer"
+                onClick={clearFilters}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer whitespace-nowrap"
               >
-                Đặt lại bộ lọc
+                <X className="w-3.5 h-3.5" />
+                Xóa lọc
               </button>
             )}
           </div>
-        )}
-      </div>
 
-      {/* Responsive Table / Card Layout */}
-      {filteredTickets.length === 0 ? (
-        <div className="p-12 text-center text-neutral-400">
-          <p className="text-sm">Không tìm thấy phiếu yêu cầu nào phù hợp.</p>
+          {/* Row 2: Status + Priority */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
+            {/* Status filter */}
+            <div className="relative">
+              <Filter className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full pl-8 pr-8 py-2 text-xs font-semibold border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B71C1C]/20 focus:border-[#B71C1C] bg-white cursor-pointer appearance-none"
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                  <option key={key} value={key}>
+                    {config.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+            </div>
+
+            {/* Priority filter */}
+            <div className="relative">
+              <Filter className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+              <select
+                value={priorityFilter}
+                onChange={(e) => {
+                  setPriorityFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full pl-8 pr-8 py-2 text-xs font-semibold border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B71C1C]/20 focus:border-[#B71C1C] bg-white cursor-pointer appearance-none"
+              >
+                <option value="ALL">Tất cả ưu tiên</option>
+                <option value="LOW">Thấp</option>
+                <option value="NORMAL">Bình thường</option>
+                <option value="HIGH">Cao</option>
+                <option value="URGENT">Khẩn cấp</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
+            </div>
+          </div>
         </div>
-      ) : (
-        <>
-          {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-neutral-50/80 border-b border-neutral-200/80 text-neutral-500 font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-4">Mã</th>
-                  <th className="py-3 px-4">Tiêu đề sự cố</th>
-                  <th className="py-3 px-4">Đơn vị</th>
-                  <th className="py-3 px-4">Người tạo</th>
-                  <th className="py-3 px-4">Mức độ</th>
-                  <th className="py-3 px-4">Trạng thái</th>
-                  <th className="py-3 px-4">Người xử lý</th>
-                  <th className="py-3 px-4">Hạn / Lịch hẹn</th>
-                  <th className="py-3 px-4 text-center">Thao tác</th>
+      )}
+
+      {/* ═══ TABLE ═══ */}
+      <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-neutral-50 border-b border-neutral-200">
+              <tr>
+                <th
+                  onClick={() => handleSort('code')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1">
+                    Mã phiếu
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('title')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none"
+                >
+                  <div className="flex items-center gap-1">
+                    Tiêu đề
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider whitespace-nowrap">
+                  Đơn vị / Người tạo
+                </th>
+                <th
+                  onClick={() => handleSort('priority')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1">
+                    Ưu tiên
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('status')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1">
+                    Trạng thái
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('createdAt')}
+                  className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider cursor-pointer hover:bg-neutral-100 select-none whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1">
+                    Ngày tạo
+                    <ArrowUpDown className="w-3 h-3" />
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {paginatedTickets.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center">
+                    <FileText className="w-10 h-10 text-neutral-300 mx-auto mb-2" />
+                    <p className="text-sm text-neutral-400 font-medium">
+                      {hasActiveFilters
+                        ? 'Không tìm thấy phiếu phù hợp với bộ lọc'
+                        : 'Chưa có phiếu yêu cầu nào'}
+                    </p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {filteredTickets.map((t) => (
+              ) : (
+                paginatedTickets.map((t) => (
                   <tr
                     key={t.id}
                     onClick={() => onSelectTicket(t)}
-                    className="hover:bg-neutral-50/80 transition-colors cursor-pointer group"
+                    className="hover:bg-neutral-50 cursor-pointer transition-colors"
+                    title="Bấm để xem chi tiết"
                   >
-                    <td className="py-3.5 px-4 font-mono font-bold text-neutral-900 whitespace-nowrap">
-                      {t.code}
+                    {/* Mã phiếu */}
+                    <td className="px-3 py-3 align-middle">
+                      <span className="font-mono font-bold text-xs bg-neutral-100 text-neutral-800 px-2 py-1 rounded-md border border-neutral-200 whitespace-nowrap">
+                        {t.code}
+                      </span>
                     </td>
-                    <td className="py-3.5 px-4 max-w-xs">
-                      <div className="font-semibold text-neutral-900 group-hover:text-[#B71C1C] transition-colors line-clamp-1">
+
+                    {/* Tiêu đề */}
+                    <td className="px-3 py-3 align-middle min-w-[280px]">
+                      <div className="font-semibold text-xs text-neutral-900 line-clamp-2">
                         {t.title}
                       </div>
-                      <div className="text-[11px] text-neutral-400 mt-0.5 line-clamp-1">
-                        {t.category}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-neutral-600 max-w-[150px] truncate">
-                      {t.departmentName}
-                    </td>
-                    <td className="py-3.5 px-4 text-neutral-700 whitespace-nowrap">
-                      <div className="font-medium">{t.creatorName}</div>
-                      <div className="text-[11px] text-neutral-400">{t.creatorPhone}</div>
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <PriorityBadge priority={t.priority} size="sm" />
-                    </td>
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <StatusBadge status={t.status} size="sm" />
-                    </td>
-                    <td className="py-3.5 px-4 text-neutral-700 whitespace-nowrap font-medium">
-                      {t.assigneeName || (
-                        <span className="text-neutral-400 italic font-normal">Chưa phân công</span>
+                      {t.category && (
+                        <div className="text-[10px] text-[#B71C1C] font-bold mt-0.5">
+                          {t.category}
+                        </div>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-neutral-500 whitespace-nowrap">
-                      {t.scheduledAt ? formatDate(t.scheduledAt) : formatDate(t.createdAt)}
+
+                    {/* Đơn vị / Người tạo */}
+                    <td className="px-3 py-3 align-middle">
+                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-700">
+                        <Building2 className="w-3 h-3 text-neutral-400 shrink-0" />
+                        <span className="truncate max-w-[160px]">
+                          {t.departmentName || '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 mt-0.5">
+                        <UserIcon className="w-3 h-3 text-neutral-400 shrink-0" />
+                        <span className="truncate max-w-[160px]">
+                          {t.creatorName}
+                        </span>
+                      </div>
                     </td>
-                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectTicket(t);
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-neutral-100 group-hover:bg-[#B71C1C] text-neutral-700 group-hover:text-white font-semibold text-[11px] transition-colors cursor-pointer"
-                      >
-                        <Eye className="w-3 h-3" />
-                        <span>Xem</span>
-                      </button>
+
+                    {/* Ưu tiên */}
+                    <td className="px-3 py-3 align-middle">
+                      <PriorityBadge priority={t.priority} size="sm" />
+                    </td>
+
+                    {/* Trạng thái */}
+                    <td className="px-3 py-3 align-middle">
+                      <StatusBadge status={t.status} size="sm" />
+                    </td>
+
+                    {/* Ngày tạo */}
+                    <td className="px-3 py-3 align-middle">
+                      <div className="flex items-center gap-1.5 text-[11px] text-neutral-600 whitespace-nowrap">
+                        <Calendar className="w-3 h-3 text-neutral-400 shrink-0" />
+                        {formatDate(t.createdAt)}
+                      </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-          {/* Mobile Card View (< 768px) */}
-          <div className="md:hidden divide-y divide-neutral-100 p-3 space-y-3">
-            {filteredTickets.map((t) => (
-              <div
-                key={t.id}
-                onClick={() => onSelectTicket(t)}
-                className="bg-neutral-50/50 p-4 rounded-xl border border-neutral-200/70 space-y-2.5 active:bg-neutral-100"
+        {/* ═══ PAGINATION ═══ */}
+        {filteredTickets.length > 0 && (
+          <div className="border-t border-neutral-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 bg-neutral-50/50">
+            <div className="text-xs text-neutral-600">
+              Hiển thị{' '}
+              <span className="font-bold">
+                {(page - 1) * pageSize + 1}
+              </span>{' '}
+              -{' '}
+              <span className="font-bold">
+                {Math.min(page * pageSize, filteredTickets.length)}
+              </span>{' '}
+              trên{' '}
+              <span className="font-bold">{filteredTickets.length}</span> phiếu
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Page size */}
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="px-2 py-1 text-xs font-semibold border border-neutral-300 rounded-md bg-white cursor-pointer"
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-xs bg-white px-2 py-0.5 rounded border border-neutral-200">
-                    {t.code}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <PriorityBadge priority={t.priority} size="sm" />
-                    <StatusBadge status={t.status} size="sm" />
-                  </div>
-                </div>
+                <option value={10}>10 / trang</option>
+                <option value={20}>20 / trang</option>
+                <option value={50}>50 / trang</option>
+                <option value={100}>100 / trang</option>
+              </select>
 
-                <h4 className="font-bold text-neutral-900 text-sm">{t.title}</h4>
+              {/* Prev */}
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="px-2.5 py-1 text-xs font-bold rounded-md border border-neutral-300 bg-white hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                ←
+              </button>
 
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-neutral-500 pt-1">
-                  <div>
-                    <span className="text-neutral-400">Đơn vị:</span> {t.departmentName}
-                  </div>
-                  <div>
-                    <span className="text-neutral-400">Người tạo:</span> {t.creatorName}
-                  </div>
-                  <div>
-                    <span className="text-neutral-400">Người xử lý:</span>{' '}
-                    <span className="font-medium text-neutral-800">
-                      {t.assigneeName || 'Chưa gán'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-neutral-400">Lịch:</span>{' '}
-                    {formatDate(t.scheduledAt || t.createdAt)}
-                  </div>
-                </div>
+              <span className="text-xs font-bold text-neutral-700 px-2">
+                {page} / {totalPages}
+              </span>
 
-                <div className="pt-2 flex justify-end">
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-white text-xs font-semibold rounded-lg border border-neutral-300 text-neutral-700"
-                  >
-                    <Eye className="w-3 h-3" /> Chi tiết
-                  </button>
-                </div>
-              </div>
-            ))}
+              {/* Next */}
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="px-2.5 py-1 text-xs font-bold rounded-md border border-neutral-300 bg-white hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                →
+              </button>
+            </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 };
 
+export default TicketList;
 
 
 ════════════════════════════════════════════════════════════
@@ -4456,6 +4643,7 @@ import React, { useState, useEffect } from 'react';
 import { Ticket, TicketStatus, SupplyItem } from '../../types';
 import { Clock, Wrench, Package, Plus, Trash2, Upload, X, Check, Save } from 'lucide-react';
 import { useToast } from '../common/Toast';
+import { apiClient } from '@/src/services/apiClient';
 
 interface TicketProcessFormProps {
   ticket: Ticket;
@@ -4564,22 +4752,24 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
     processAfterFiles(Array.from(e.target.files));
   };
 
-  const processAfterFiles = (files: File[]) => {
+  const processAfterFiles = async (files: File[]) => {
     const valid = files.filter((f) => f.type.startsWith('image/')).slice(0, 4 - afterImages.length);
     if (valid.length === 0) {
       toast.warning('Chỉ chấp nhận tệp hình ảnh');
       return;
     }
 
-    valid.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setAfterImages((prev) => [...prev, event.target!.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    for (const file of valid) {
+      try {
+        // ✅ Upload lên BE
+        await apiClient.uploadAttachment(ticket.id, file, 'AFTER');
+      } catch (err) {
+        console.error('Lỗi upload AFTER:', err);
+        toast.error(`Lỗi upload ảnh ${file.name}`);
+      }
+    }
+    // Reload lại attachments
+    onSave({ /* ... */ });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -4680,11 +4870,10 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
             return (
               <div
                 key={item.name}
-                className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-colors ${
-                  selected
+                className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-colors ${selected
                     ? 'bg-blue-50/70 border-blue-200 text-neutral-900'
                     : 'bg-neutral-50/70 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
-                }`}
+                  }`}
               >
                 <label className="flex items-center gap-2 cursor-pointer flex-1">
                   <input
@@ -4814,11 +5003,10 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${
-            isDragging
+          className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${isDragging
               ? 'border-blue-500 bg-blue-50/50'
               : 'border-neutral-300 hover:border-blue-400 bg-neutral-50/50'
-          }`}
+            }`}
         >
           <Upload className="w-6 h-6 text-neutral-400 mx-auto mb-1.5" />
           <p className="text-xs text-neutral-600">
@@ -5029,11 +5217,11 @@ FILE: frontend/src/pages/AdminDashboard.tsx
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { storageService } from '../services/storage';
+import { apiClient } from '../services/apiClient';
 import { Ticket, User, Department, AuditLog, TicketStatus, SupplyItem } from '../types';
 import { Header } from '../components/common/Header';
 import { Sidebar, AdminTab } from '../components/common/Sidebar';
 import { AdminOverview } from '../components/admin/AdminOverview';
-import { TicketList } from '../components/tickets/TicketList';
 import { TicketForm } from '../components/tickets/TicketForm';
 import { DispatchBoard } from '../components/admin/DispatchBoard';
 import { UserManager } from '../components/admin/UserManager';
@@ -5066,7 +5254,8 @@ export const AdminDashboard: React.FC = () => {
   const [viewingTicket, setViewingTicket] = useState<Ticket | null>(null);
   const [ratingTicket, setRatingTicket] = useState<Ticket | null>(null);
   const [isKpiModalOpen, setIsKpiModalOpen] = useState(false);
-
+  const [ticketListStatusFilter, setTicketListStatusFilter] = useState<string>('ALL');
+  const [ticketListPriorityFilter, setTicketListPriorityFilter] = useState<string>('ALL');
   // For Technical Process Tab
   const [selectedProcessTicketId, setSelectedProcessTicketId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -5220,6 +5409,8 @@ export const AdminDashboard: React.FC = () => {
                 tickets={tickets}
                 onViewTicket={(t) => setViewingTicket(t)}
                 onGoToDispatch={() => setActiveTab('dispatch')}
+                onGoToProcessing={() => setActiveTab('all-tickets')}  // ✅ THÊM — chuyển sang tab All Tickets
+                onGoToDone={() => setActiveTab('all-tickets')}
               />
             )}
 
@@ -5242,6 +5433,8 @@ export const AdminDashboard: React.FC = () => {
                 onSelectTicket={(t) => setViewingTicket(t)}
                 title="Tất cả phiếu yêu cầu kỹ thuật toàn viện"
                 showFilters={true}
+                initialStatusFilter={ticketListStatusFilter}
+                onFilterChange={() => setTicketListStatusFilter('ALL')}
               />
             )}
 
@@ -7211,6 +7404,7 @@ export interface User {
   role?: UserRole;
   departmentId?: string;
   departmentName?: string;
+  department?: { id: string; code: string; name: string };
   email: string;
   phone: string;
   active: boolean;
@@ -7257,25 +7451,39 @@ export interface Ticket {
   assigneeName?: string;
   scheduledAt?: string;
   completedAt?: string;
+  processNote?: string;            // đổi từ technicalNotes
   supplies: SupplyItem[];
-  beforeImages: string[];
-  afterImages: string[];
-  technicalNotes?: string;
+  attachments?: TicketAttachment[]; // thêm
   rating?: number;
-  feedback?: RatingFeedback;
+  feedback?: string;               // đổi từ object → string
+  ratedAt?: string;                // thêm
   createdAt: string;
   updatedAt?: string;
 }
 
-export type AuditLogLevel = 'INFO' | 'WARNING' | 'SECURITY' | 'DANGER';
+export interface TicketAttachment {
+  id: string;
+  ticketId: string;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  fileType: string;
+  stage: 'BEFORE' | 'AFTER';
+  uploadedBy: string;
+  uploadedAt: string;
+}
 
+
+export type AuditLogLevel = 'INFO' | 'WARNING' | 'SECURITY' | 'DANGER';
 export interface AuditLog {
   id: string;
-  timestamp: string;
-  user: string;
+  createdAt: string;     // sửa từ timestamp
+  userName?: string;     // sửa từ user
+  userRole?: string;
   action: string;
-  entity: string;
-  ip: string;
+  entityType?: string;   // sửa từ entity
+  entityId?: string;
+  ipAddress?: string;    // sửa từ ip
   level: AuditLogLevel;
 }
 
@@ -7422,4 +7630,4 @@ export default defineConfig(() => {
 ════════════════════════════════════════════════════════════
 
 Tổng số file đã export: 39
-Ngày xuất: 2026-10-09 16:23:12
+Ngày xuất: 2026-10-11 08:52:30

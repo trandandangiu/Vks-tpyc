@@ -15,6 +15,30 @@ export const ticketsController = {
       res.status(201).json({ success: true, message: 'Tạo phiếu thành công', ticket });
     } catch (err) { next(err); }
   },
+  // ✅ THÊM
+  async update(req, res, next) {
+    try {
+      const ticket = await ticketsService.update(req.params.id, req.body, req.user);
+      res.json({ success: true, message: 'Cập nhật phiếu thành công', ticket });
+    } catch (err) { next(err); }
+  },
+  async remove(req, res, next) {
+    try {
+      res.json(await ticketsService.remove(req.params.id, req.user));
+    } catch (err) { next(err); }
+  },
+  async assign(req, res, next) {
+    try {
+      const ticket = await ticketsService.assign(req.params.id, req.body, req.user);
+      res.json({ success: true, message: 'Đã điều phối phiếu', ticket });
+    } catch (err) { next(err); }
+  },
+  async process(req, res, next) {
+    try {
+      const ticket = await ticketsService.process(req.params.id, req.body, req.user);
+      res.json({ success: true, message: 'Đã cập nhật xử lý', ticket });
+    } catch (err) { next(err); }
+  },
   async assign(req, res, next) {
     try {
       const ticket = await ticketsService.assign(req.params.id, req.body, req.user);

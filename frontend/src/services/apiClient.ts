@@ -86,7 +86,7 @@ export const apiClient = {
   },
 
   async logout() {
-    try { await request('/auth/logout', { method: 'POST' }); } catch {}
+    try { await request('/auth/logout', { method: 'POST' }); } catch { }
     this.clearToken();
   },
 
@@ -192,6 +192,20 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  async updateTicket(ticketId: string, payload: Partial<Ticket>) {
+    return request<{ success: boolean; ticket: Ticket; message?: string }>(
+      `/tickets/${ticketId}`,
+      { method: 'PUT', body: JSON.stringify(payload) }
+    );
+  },
+
+  async deleteTicket(ticketId: string) {
+    return request<{ success: boolean; message?: string }>(
+      `/tickets/${ticketId}`,
+      { method: 'DELETE' }
+    );
   },
 
   async assignTicket(ticketId: string, assigneeId: string) {

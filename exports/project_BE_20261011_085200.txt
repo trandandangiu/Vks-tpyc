@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════╗
 ║  DỰ ÁN: VKS-QLCV-v3 — BE
-║  Xuất ngày: 2026-10-09 16:22:46
+║  Xuất ngày: 2026-10-11 08:52:03
 ╚══════════════════════════════════════════════════════════╝
 
 ════════════════════════════════════════════════════════════
@@ -13,6 +13,8 @@
 ├── prisma/
 │   ├── migrations/
 │   │   ├── 20261009091018_init_ptcv/
+│   │   │   └── migration.sql
+│   │   ├── 20261009093029_add_department_description/
 │   │   │   └── migration.sql
 │   │   └── migration_lock.toml
 │   ├── schema.prisma
@@ -323,6 +325,15 @@ ALTER TABLE "ticket_replies" ADD CONSTRAINT "ticket_replies_user_id_fkey" FOREIG
 
 
 ════════════════════════════════════════════════════════════
+FILE: backend/prisma/migrations/20261009093029_add_department_description/migration.sql
+════════════════════════════════════════════════════════════
+
+-- AlterTable
+ALTER TABLE "departments" ADD COLUMN     "description" TEXT;
+
+
+
+════════════════════════════════════════════════════════════
 FILE: backend/prisma/schema.prisma
 ════════════════════════════════════════════════════════════
 
@@ -340,6 +351,7 @@ model Department {
   id        String   @id @default(uuid())
   code      String   @unique
   name      String
+  description String? 
   active    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1726,7 +1738,7 @@ export const departmentsService = {
     if (existing) throw { status: 400, message: `Mã phòng "${code}" đã tồn tại` };
 
     const dept = await prisma.department.create({
-      data: { code: code.trim().toUpperCase(), name: name.trim() },
+      data: { code: code.trim().toUpperCase(), name: name.trim(), description: description?.trim() || null },
     });
 
     await auditLogsService.create({
@@ -2485,5 +2497,5 @@ export const usersService = {
   TỔNG KẾT — BE
 ════════════════════════════════════════════════════════════
 
-Tổng số file đã export: 34
-Ngày xuất: 2026-10-09 16:22:57
+Tổng số file đã export: 35
+Ngày xuất: 2026-10-11 08:52:15

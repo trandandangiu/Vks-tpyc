@@ -376,4 +376,114 @@ export const ticketsService = {
       ratedCount: rated.length,
     };
   },
+
+    // ✅ THÊM MỚI: ADMIN cập nhật ticket
+  async update(id, data, currentUser) {
+    if (currentUser.role !== 'ADMIN') {
+      throw { status: 403, message: 'Chỉ ADMIN mới được sửa phiếu' };
+    }
+
+    const existing = await prisma.ticket.findUnique({ where: { id } });
+    if (!existing) throw { status: 404, message: 'Không tìm thấy phiếu' };
+
+    const {
+      title, description, category, priority, status,
+      creatorName, creatorPhone, creatorPosition,
+      assigneeId, scheduledAt, processNote,
+    } = data;
+
+    const updateData = {};
+
+    if (title !== undefined) updateData.title = title.trim();
+    if (description !== undefined) updateData.description = description?.trim() || null;
+    if (category !== undefined) updateData.category = category;
+    if (priority !== undefined) updateData.priority = priority;
+    if (status !== undefined) updateData.status = status;
+    if (creatorName !== undefined) updateData.creatorName = creatorName;
+    if (creatorPhone !== undefined) updateData.creatorPhone = creatorPhone;
+    if (creatorPosition !== undefined) updateData.creatorPosition = creatorPosition;
+    if (processNote !== undefined) updateData.processNote = processNote;
+
+    // Nếu đổi assignee
+    if (assigneeId !== undefined) {
+      if (assigneeId === null) {
+        updateData.assigneeId = null;
+        updateData.assigneeName = null;
+      } else {
+        const assignee = await prisma.user.findUnique({ where: { id: assigneeId } });
+        if (!assignee || assignee.role !== 'TECHNICAL') {
+          throw { status: 400, message: 'Người được gán phải là TECHNICAL' };
+        }
+        updateData.assigneeId = assigneeId;
+        updateData.assigneeName = assignee.fullName;
+      }
+    }
+
+    if (scheduledAt !== undefined) {
+      updateData.scheduledAt = scheduledAt ? new Date(scheduledAt) : null;
+    }
+
+    // Nếu status → DONE thì set completedAt
+    if (status === 'DONE' && !existing.completedAt) {
+      updateData.completedAt = new Date();
+    }
+
+    const updated = await prisma.ticket.update({
+      where: { id },
+      data: updateData,
+      include: { supplies: true },
+    });
+
+    await auditLogsService.create({
+      userId: currentUser.id,
+      userName: currentUser.fullName,
+      userRole: currentUser.role,
+      action: 'UPDATE_TICKET',
+      entityType: 'TICKET',
+      entityId: id,
+      oldValue: { code: existing.code, title: existing.title, status: existing.status },
+      newValue: updateData,
+      level: 'INFO',
+    });
+
+    return updated;
+  },
+
+  // ✅ THÊM MỚI: ADMIN xóa ticket (soft delete ở đây là xóa thật, cascade xóa supplies/attachments/replies)
+  async remove(id, currentUser) {
+    if (currentUser.role !== 'ADMIN') {
+      throw { status: 403, message: 'Chỉ ADMIN mới được xóa phiếu' };
+    }
+
+    const ticket = await prisma.ticket.findUnique({ where: { id } });
+    if (!ticket) throw { status: 404, message: 'Không tìm thấy phiếu' };
+
+    // Xóa file vật lý của attachments trước
+    try {
+      const attachments = await prisma.ticketAttachment.findMany({ where: { ticketId: id } });
+      const fs = await import('fs');
+      for (const att of attachments) {
+        try { fs.unlinkSync(att.filePath); } catch (e) { /* ignore */ }
+      }
+    } catch (e) {
+      console.error('Lỗi xóa file attachments:', e.message);
+    }
+
+    // Xóa ticket (cascade sẽ tự xóa supplies, attachments, replies)
+    await prisma.ticket.delete({ where: { id } });
+
+    await auditLogsService.create({
+      userId: currentUser.id,
+      userName: currentUser.fullName,
+      userRole: currentUser.role,
+      action: 'DELETE_TICKET',
+      entityType: 'TICKET',
+      entityId: id,
+      oldValue: { code: ticket.code, title: ticket.title, status: ticket.status },
+      level: 'SECURITY',
+    });
+
+    return { success: true, message: `Đã xóa phiếu [${ticket.code}]` };
+  },
+
 };
