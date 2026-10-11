@@ -162,7 +162,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
             Quản lý tài khoản cán bộ
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Danh sách cán bộ sử dụng hệ thống và thông tin liên hệ.
+            Danh sách đơn vị và thông tin liên hệ.
           </p>
         </div>
 
@@ -201,7 +201,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
                       u.role === 'TECHNICAL' ? 'bg-blue-100 text-blue-800' :
                       'bg-emerald-100 text-emerald-800'
                     }`}>
-                      {u.role || 'CUSTOMER'}
+                      {u.role || 'Đơn vị'}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-neutral-600 max-w-[200px] truncate">
@@ -302,7 +302,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
               </label>
               <input
                 type="text"
-                required
+               
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none"
@@ -319,7 +319,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
                 className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none cursor-pointer"
               >
                 <option value="ADMIN">Quản trị viên</option>
-                <option value="CUSTOMER">Khách hàng (Đơn vị)</option>
+                <option value="CUSTOMER">Đơn vị tạo phiếu</option>
                 <option value="TECHNICAL">Kỹ thuật viên</option>
               </select>
             </div>

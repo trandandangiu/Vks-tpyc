@@ -186,36 +186,7 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  // 4. SỬA KHỐI RENDER TicketList (trong activeTab === 'all-tickets')
-  {
-    activeTab === 'all-tickets' && (
-      <TicketList
-        tickets={tickets}
-        onSelectTicket={(t) => setViewingTicket(t)}
-        title={
-          ticketListFilter === 'PROCESSING'
-            ? 'Phiếu đang xử lý'
-            : ticketListFilter === 'DONE'
-              ? 'Phiếu đã hoàn thành'
-              : 'Tất cả phiếu yêu cầu kỹ thuật toàn viện'
-        }
-        showFilters={true}
-        initialStatusFilter={ticketListFilter}
-        onFilterChange={() => setTicketListFilter('ALL')}
-        onEdit={(t) => setEditingTicket(t)}       // ✅ THÊM
-        onDelete={handleDeleteTicket}             // ✅ THÊM
-        canManage={user?.role === 'ADMIN'}        // ✅ THÊM — chỉ ADMIN
-      />
-    )
-  }
 
-  // 5. THÊM MODAL — đặt cạnh RatingModal
-  <TicketEditModal
-    isOpen={!!editingTicket}
-    onClose={() => setEditingTicket(null)}
-    ticket={editingTicket}
-    onSaved={loadData}
-  />
 
   return (
     <div className="min-h-screen bg-[#F5F5F0] flex flex-col">
@@ -279,11 +250,14 @@ export const AdminDashboard: React.FC = () => {
                     ? 'Phiếu đang xử lý'
                     : ticketListFilter === 'DONE'
                       ? 'Phiếu đã hoàn thành'
-                      : 'Tất cả phiếu yêu cầu kỹ thuật toàn viện'
+                      : 'Phiếu yêu cầu kỹ thuật toàn thành phố'
                 }
                 showFilters={true}
                 initialStatusFilter={ticketListFilter}
                 onFilterChange={() => setTicketListFilter('ALL')}
+                onEdit={(t) => setEditingTicket(t)}
+                onDelete={handleDeleteTicket}
+                canManage={user?.role === 'ADMIN'}
               />
             )}
 
@@ -495,6 +469,12 @@ export const AdminDashboard: React.FC = () => {
         onClose={() => setRatingTicket(null)}
         ticket={ratingTicket}
         onRated={loadData}
+      />
+      <TicketEditModal
+        isOpen={!!editingTicket}
+        onClose={() => setEditingTicket(null)}
+        ticket={editingTicket}
+        onSaved={loadData}
       />
 
       <TechnicalKpiModal

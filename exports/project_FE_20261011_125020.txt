@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════╗
 ║  DỰ ÁN: VKS-QLCV-v3 — FE
-║  Xuất ngày: 2026-10-11 08:52:18
+║  Xuất ngày: 2026-10-11 12:50:31
 ╚══════════════════════════════════════════════════════════╝
 
 ════════════════════════════════════════════════════════════
@@ -36,6 +36,7 @@
 │   │       ├── StarRating.tsx
 │   │       ├── TicketCard.tsx
 │   │       ├── TicketDetail.tsx
+│   │       ├── TicketEditModal.tsx
 │   │       ├── TicketForm.tsx
 │   │       ├── TicketList.tsx
 │   │       └── TicketProcessForm.tsx
@@ -285,7 +286,6 @@ import {
   Wrench,
   CheckCircle2,
   TrendingUp,
-  AlertTriangle,
   ArrowUpRight,
 } from 'lucide-react';
 import { StatusBadge, PriorityBadge } from '../common/StatusBadge';
@@ -294,18 +294,15 @@ interface AdminOverviewProps {
   tickets: Ticket[];
   onViewTicket: (ticket: Ticket) => void;
   onGoToDispatch: () => void;
-  onGoToProcessing: () => void;   // ✅ THÊM
-  onGoToDone: () => void;         // ✅ THÊM
+  onGoToAllTickets: (statusFilter?: string) => void; // ✅ SỬA: nhận statusFilter
 }
 
 export const AdminOverview: React.FC<AdminOverviewProps> = ({
   tickets,
   onViewTicket,
   onGoToDispatch,
-  onGoToProcessing,
-  onGoToDone,
+  onGoToAllTickets,
 }) => {
-  // 1. KPI counts
   const totalCount = tickets.length;
   const newCount = tickets.filter((t) => t.status === 'NEW').length;
   const processingCount = tickets.filter(
@@ -313,7 +310,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   ).length;
   const doneCount = tickets.filter((t) => t.status === 'DONE').length;
 
-  // 2. Status distribution for PieChart
   const statusChartData = useMemo(() => {
     const counts: Record<string, number> = {
       NEW: 0,
@@ -331,12 +327,12 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     });
 
     const colors: Record<string, string> = {
-      NEW: '#94a3b8', // slate-400
-      ASSIGNED: '#a855f7', // purple-500
-      PROCESSING: '#3b82f6', // blue-500
-      WAITING_SUPPLY: '#f59e0b', // amber-500
-      DONE: '#10b981', // emerald-500
-      CANCELLED: '#f43f5e', // rose-500
+      NEW: '#94a3b8',
+      ASSIGNED: '#a855f7',
+      PROCESSING: '#3b82f6',
+      WAITING_SUPPLY: '#f59e0b',
+      DONE: '#10b981',
+      CANCELLED: '#f43f5e',
     };
 
     return Object.entries(counts).map(([statusKey, count]) => ({
@@ -346,7 +342,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     }));
   }, [tickets]);
 
-  // 3. 7-day BarChart data (calculated dynamically from past 7 days)
   const last7DaysData = useMemo(() => {
     const days: Array<{ day: string; created: number; processing: number; done: number }> = [];
     const now = new Date();
@@ -363,7 +358,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
 
       const createdCount = tickets.filter((t) => t.createdAt.startsWith(datePrefix)).length;
 
-      // ✅ Đếm phiếu đang xử lý trong ngày (dựa vào updatedAt)
       const processingCountOnDay = tickets.filter(
         (t) =>
           (t.status === 'PROCESSING' || t.status === 'ASSIGNED' || t.status === 'WAITING_SUPPLY') &&
@@ -386,7 +380,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     return days;
   }, [tickets]);
 
-  // 4. 5 Most recent tickets
   const recentTickets = useMemo(() => {
     return [...tickets]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -397,13 +390,16 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     <div className="space-y-6">
       {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total */}
-        <div className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs relative overflow-hidden">
+        {/* Total — Click → ALL */}
+        <div
+          onClick={() => onGoToAllTickets('ALL')}
+          className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-neutral-500 hover:shadow-md transition-all group"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
               Tổng số phiếu
             </span>
-            <div className="w-9 h-9 rounded-xl bg-neutral-100 text-neutral-700 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-neutral-100 text-neutral-700 flex items-center justify-center group-hover:scale-110 transition-transform">
               <FileText className="w-5 h-5" />
             </div>
           </div>
@@ -419,7 +415,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* Chờ điều phối (Clickable) */}
+        {/* Chờ điều phối — Click → Dispatch */}
         <div
           onClick={onGoToDispatch}
           className="bg-white rounded-2xl p-5 border border-red-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-[#B71C1C] hover:shadow-md transition-all group"
@@ -444,9 +440,9 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* Đang xử lý (Clickable) ✅ */}
+        {/* Đang xử lý — Click → All Tickets filter PROCESSING */}
         <div
-          onClick={onGoToProcessing}
+          onClick={() => onGoToAllTickets('PROCESSING')}
           className="bg-white rounded-2xl p-5 border border-blue-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-blue-600 hover:shadow-md transition-all group"
         >
           <div className="flex items-center justify-between">
@@ -469,9 +465,9 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* Hoàn thành (Clickable) ✅ */}
+        {/* Hoàn thành — Click → All Tickets filter DONE */}
         <div
-          onClick={onGoToDone}
+          onClick={() => onGoToAllTickets('DONE')}
           className="bg-white rounded-2xl p-5 border border-emerald-200/90 shadow-2xs relative overflow-hidden cursor-pointer hover:border-emerald-600 hover:shadow-md transition-all group"
         >
           <div className="flex items-center justify-between">
@@ -497,9 +493,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         </div>
       </div>
 
-      {/* 2 Charts: PieChart Trạng thái + BarChart 7 ngày */}
+      {/* ... phần 2 charts và recent tickets giữ nguyên ... */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* PieChart: Trạng thái phiếu (5 cols) */}
         <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-neutral-200/90 shadow-2xs flex flex-col justify-between">
           <div className="mb-2">
             <h3 className="font-bold text-sm text-neutral-900">Cơ cấu trạng thái phiếu</h3>
@@ -542,7 +537,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           </div>
         </div>
 
-        {/* ✅ BarChart ĐÃ ĐỔI: Stacked Bar + Line overlay (7 cols) */}
         <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-neutral-200/90 shadow-2xs flex flex-col justify-between">
           <div className="mb-2 flex items-center justify-between">
             <div>
@@ -594,7 +588,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         </div>
       </div>
 
-      {/* 5 Phiếu mới nhất */}
       <div className="bg-white rounded-2xl p-5 border border-neutral-200/90 shadow-2xs">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -642,7 +635,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     </div>
   );
 };
-
 
 
 ════════════════════════════════════════════════════════════
@@ -3865,6 +3857,242 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
 
 
 ════════════════════════════════════════════════════════════
+FILE: frontend/src/components/tickets/TicketEditModal.tsx
+════════════════════════════════════════════════════════════
+
+import React, { useState, useEffect } from 'react';
+import { Ticket, TicketStatus, TicketPriority, INCIDENT_CATEGORIES, CREATOR_POSITIONS } from '../../types';
+import { Modal } from '../common/Modal';
+import { apiClient } from '../../services/apiClient';
+import { useToast } from '../common/Toast';
+import { Save } from 'lucide-react';
+
+interface TicketEditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  ticket: Ticket | null;
+  onSaved?: () => void;
+}
+
+export const TicketEditModal: React.FC<TicketEditModalProps> = ({
+  isOpen,
+  onClose,
+  ticket,
+  onSaved,
+}) => {
+  const toast = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [priority, setPriority] = useState<TicketPriority>('NORMAL');
+  const [status, setStatus] = useState<TicketStatus>('NEW');
+  const [creatorName, setCreatorName] = useState('');
+  const [creatorPhone, setCreatorPhone] = useState('');
+  const [creatorPosition, setCreatorPosition] = useState('');
+
+  // Sync khi mở modal
+  useEffect(() => {
+    if (ticket) {
+      setTitle(ticket.title || '');
+      setDescription(ticket.description || '');
+      setCategory(ticket.category || INCIDENT_CATEGORIES[0]);
+      setPriority(ticket.priority || 'NORMAL');
+      setStatus(ticket.status || 'NEW');
+      setCreatorName(ticket.creatorName || '');
+      setCreatorPhone(ticket.creatorPhone || '');
+      setCreatorPosition(ticket.creatorPosition || CREATOR_POSITIONS[0]);
+    }
+  }, [ticket]);
+
+  if (!ticket) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!title.trim()) { toast.error('Vui lòng nhập tiêu đề!'); return; }
+    if (!category) { toast.error('Vui lòng chọn loại sự cố!'); return; }
+
+    setIsSubmitting(true);
+    try {
+      const res = await apiClient.updateTicket(ticket.id, {
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        priority,
+        status,
+        creatorName: creatorName.trim(),
+        creatorPhone: creatorPhone.trim(),
+        creatorPosition,
+      } as any);
+
+      if (res.success) {
+        toast.success(`Đã cập nhật phiếu [${ticket.code}]`);
+        onSaved?.();
+        onClose();
+      } else {
+        toast.error(res.message || 'Lỗi cập nhật');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi kết nối');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Chỉnh sửa phiếu yêu cầu"
+      subtitle={`Mã phiếu: ${ticket.code}`}
+      maxWidth="2xl"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
+              Tiêu đề <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
+              Loại sự cố <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none cursor-pointer"
+            >
+              {INCIDENT_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
+            Mô tả
+          </label>
+          <textarea
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
+              Mức độ ưu tiên
+            </label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as TicketPriority)}
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none cursor-pointer"
+            >
+              <option value="LOW">Thấp</option>
+              <option value="NORMAL">Bình thường</option>
+              <option value="HIGH">Cao</option>
+              <option value="URGENT">Khẩn cấp</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
+              Trạng thái
+            </label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as TicketStatus)}
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none cursor-pointer"
+            >
+              <option value="NEW">Chờ điều phối</option>
+              <option value="ASSIGNED">Đã phân công</option>
+              <option value="PROCESSING">Đang xử lý</option>
+              <option value="WAITING_SUPPLY">Chờ vật tư</option>
+              <option value="DONE">Hoàn thành</option>
+              <option value="CANCELLED">Đã hủy</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
+              Người yêu cầu
+            </label>
+            <input
+              type="text"
+              value={creatorName}
+              onChange={(e) => setCreatorName(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
+              SĐT
+            </label>
+            <input
+              type="tel"
+              value={creatorPhone}
+              onChange={(e) => setCreatorPhone(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
+              Vị trí
+            </label>
+            <select
+              value={creatorPosition}
+              onChange={(e) => setCreatorPosition(e.target.value)}
+              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none cursor-pointer"
+            >
+              {CREATOR_POSITIONS.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2.5 pt-3 border-t border-neutral-100">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 rounded-xl cursor-pointer"
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-[#B71C1C] hover:bg-[#7F0E0E] rounded-xl shadow-xs cursor-pointer disabled:opacity-50"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>{isSubmitting ? 'ĐANG LƯU...' : 'LƯU THAY ĐỔI'}</span>
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+
+════════════════════════════════════════════════════════════
 FILE: frontend/src/components/tickets/TicketForm.tsx
 ════════════════════════════════════════════════════════════
 
@@ -4183,7 +4411,7 @@ FILE: frontend/src/components/tickets/TicketList.tsx
 ════════════════════════════════════════════════════════════
 
 // src/components/tickets/TicketList.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Ticket, STATUS_CONFIG } from '../../types';
 import { StatusBadge, PriorityBadge } from '../common/StatusBadge';
 import {
@@ -4194,10 +4422,11 @@ import {
   Calendar,
   User as UserIcon,
   Building2,
-  Clock,
   ArrowUpDown,
   X,
-} from 'lucide-react';
+  Edit2,
+  Trash2,
+} from 'lucide-react';   // ✅ THÊM Edit2, Trash2
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -4206,10 +4435,15 @@ interface TicketListProps {
   showFilters?: boolean;
   initialStatusFilter?: string;
   onFilterChange?: () => void;
+  onEdit?: (ticket: Ticket) => void;      // ✅ THÊM
+  onDelete?: (ticket: Ticket) => void;    // ✅ THÊM
+  canManage?: boolean;                    // ✅ THÊM — chỉ ADMIN mới thấy nút
 }
 
 type SortField = 'code' | 'title' | 'priority' | 'status' | 'createdAt';
 type SortDir = 'asc' | 'desc';
+
+const PROCESSING_GROUP = ['PROCESSING', 'ASSIGNED', 'WAITING_SUPPLY'];
 
 export const TicketList: React.FC<TicketListProps> = ({
   tickets,
@@ -4218,6 +4452,9 @@ export const TicketList: React.FC<TicketListProps> = ({
   showFilters = true,
   initialStatusFilter = 'ALL',
   onFilterChange,
+  onEdit,
+  onDelete,
+  canManage = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
@@ -4227,19 +4464,14 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Reset filter khi prop initialStatusFilter thay đổi
-  React.useEffect(() => {
+  useEffect(() => {
     setStatusFilter(initialStatusFilter);
     setPage(1);
   }, [initialStatusFilter]);
 
-  // ============================================
-  // FILTER + SORT
-  // ============================================
   const filteredTickets = useMemo(() => {
     let result = [...tickets];
 
-    // 1. Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -4252,17 +4484,16 @@ export const TicketList: React.FC<TicketListProps> = ({
       );
     }
 
-    // 2. Filter status
-    if (statusFilter !== 'ALL') {
+    if (statusFilter === 'PROCESSING') {
+      result = result.filter((t) => PROCESSING_GROUP.includes(t.status));
+    } else if (statusFilter !== 'ALL') {
       result = result.filter((t) => t.status === statusFilter);
     }
 
-    // 3. Filter priority
     if (priorityFilter !== 'ALL') {
       result = result.filter((t) => t.priority === priorityFilter);
     }
 
-    // 4. Sort
     result.sort((a, b) => {
       let aVal: any = a[sortField];
       let bVal: any = b[sortField];
@@ -4283,16 +4514,13 @@ export const TicketList: React.FC<TicketListProps> = ({
     return result;
   }, [tickets, searchQuery, statusFilter, priorityFilter, sortField, sortDir]);
 
-  // ============================================
-  // PAGINATION
-  // ============================================
   const totalPages = Math.max(1, Math.ceil(filteredTickets.length / pageSize));
   const paginatedTickets = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredTickets.slice(start, start + pageSize);
   }, [filteredTickets, page, pageSize]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (page > totalPages) setPage(1);
   }, [totalPages, page]);
 
@@ -4318,7 +4546,6 @@ export const TicketList: React.FC<TicketListProps> = ({
     statusFilter !== 'ALL' ||
     priorityFilter !== 'ALL';
 
-  // Format ngày
   const formatDate = (val?: string) => {
     if (!val) return '—';
     try {
@@ -4334,9 +4561,17 @@ export const TicketList: React.FC<TicketListProps> = ({
     }
   };
 
+  const getFilterLabel = () => {
+    if (statusFilter === 'PROCESSING') return 'Đang xử lý';
+    if (statusFilter === 'ALL') return null;
+    return STATUS_CONFIG[statusFilter as keyof typeof STATUS_CONFIG]?.label || statusFilter;
+  };
+
+  const currentFilterLabel = getFilterLabel();
+
   return (
     <div className="space-y-4">
-      {/* ═══ HEADER ═══ */}
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white rounded-2xl px-4 sm:px-5 py-3 sm:py-4 border border-neutral-200 shadow-2xs">
         <div className="flex items-baseline gap-2.5 min-w-0">
           <h1 className="text-base sm:text-lg font-bold text-neutral-900 truncate">
@@ -4345,13 +4580,17 @@ export const TicketList: React.FC<TicketListProps> = ({
           <span className="shrink-0 text-xs font-semibold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
             {filteredTickets.length}
           </span>
+          {currentFilterLabel && (
+            <span className="shrink-0 text-xs font-bold text-white bg-[#B71C1C] px-2.5 py-0.5 rounded-full">
+              {currentFilterLabel}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* ═══ FILTER BAR ═══ */}
+      {/* FILTER BAR */}
       {showFilters && (
         <div className="bg-white rounded-2xl p-3.5 border border-neutral-200 shadow-2xs space-y-3">
-          {/* Row 1: Search */}
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -4388,9 +4627,7 @@ export const TicketList: React.FC<TicketListProps> = ({
             )}
           </div>
 
-          {/* Row 2: Status + Priority */}
           <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
-            {/* Status filter */}
             <div className="relative">
               <Filter className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
               <select
@@ -4402,16 +4639,16 @@ export const TicketList: React.FC<TicketListProps> = ({
                 className="w-full pl-8 pr-8 py-2 text-xs font-semibold border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B71C1C]/20 focus:border-[#B71C1C] bg-white cursor-pointer appearance-none"
               >
                 <option value="ALL">Tất cả trạng thái</option>
-                {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-                  <option key={key} value={key}>
-                    {config.label}
-                  </option>
-                ))}
+                <option value="PROCESSING">Đang xử lý (gộp 3 trạng thái)</option>
+                <option value="NEW">Chờ điều phối</option>
+                <option value="ASSIGNED">Đã phân công</option>
+                <option value="WAITING_SUPPLY">Chờ vật tư</option>
+                <option value="DONE">Hoàn thành</option>
+                <option value="CANCELLED">Đã hủy</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
             </div>
 
-            {/* Priority filter */}
             <div className="relative">
               <Filter className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
               <select
@@ -4434,7 +4671,7 @@ export const TicketList: React.FC<TicketListProps> = ({
         </div>
       )}
 
-      {/* ═══ TABLE ═══ */}
+      {/* TABLE */}
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -4488,12 +4725,18 @@ export const TicketList: React.FC<TicketListProps> = ({
                     <ArrowUpDown className="w-3 h-3" />
                   </div>
                 </th>
+                {/* ✅ CỘT THAO TÁC — chỉ hiện khi canManage */}
+                {canManage && (
+                  <th className="px-3 py-3 text-[11px] font-black text-neutral-600 uppercase tracking-wider whitespace-nowrap text-center w-24">
+                    Thao tác
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
               {paginatedTickets.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center">
+                  <td colSpan={canManage ? 7 : 6} className="py-16 text-center">
                     <FileText className="w-10 h-10 text-neutral-300 mx-auto mb-2" />
                     <p className="text-sm text-neutral-400 font-medium">
                       {hasActiveFilters
@@ -4510,14 +4753,12 @@ export const TicketList: React.FC<TicketListProps> = ({
                     className="hover:bg-neutral-50 cursor-pointer transition-colors"
                     title="Bấm để xem chi tiết"
                   >
-                    {/* Mã phiếu */}
                     <td className="px-3 py-3 align-middle">
                       <span className="font-mono font-bold text-xs bg-neutral-100 text-neutral-800 px-2 py-1 rounded-md border border-neutral-200 whitespace-nowrap">
                         {t.code}
                       </span>
                     </td>
 
-                    {/* Tiêu đề */}
                     <td className="px-3 py-3 align-middle min-w-[280px]">
                       <div className="font-semibold text-xs text-neutral-900 line-clamp-2">
                         {t.title}
@@ -4529,7 +4770,6 @@ export const TicketList: React.FC<TicketListProps> = ({
                       )}
                     </td>
 
-                    {/* Đơn vị / Người tạo */}
                     <td className="px-3 py-3 align-middle">
                       <div className="flex items-center gap-1.5 text-[11px] text-neutral-700">
                         <Building2 className="w-3 h-3 text-neutral-400 shrink-0" />
@@ -4545,23 +4785,47 @@ export const TicketList: React.FC<TicketListProps> = ({
                       </div>
                     </td>
 
-                    {/* Ưu tiên */}
                     <td className="px-3 py-3 align-middle">
                       <PriorityBadge priority={t.priority} size="sm" />
                     </td>
 
-                    {/* Trạng thái */}
                     <td className="px-3 py-3 align-middle">
                       <StatusBadge status={t.status} size="sm" />
                     </td>
 
-                    {/* Ngày tạo */}
                     <td className="px-3 py-3 align-middle">
                       <div className="flex items-center gap-1.5 text-[11px] text-neutral-600 whitespace-nowrap">
                         <Calendar className="w-3 h-3 text-neutral-400 shrink-0" />
                         {formatDate(t.createdAt)}
                       </div>
                     </td>
+
+                    {/* ✅ CỘT THAO TÁC — stopPropagation để không mở modal chi tiết */}
+                    {canManage && (
+                      <td className="px-3 py-3 align-middle text-center whitespace-nowrap">
+                        <div
+                          className="flex items-center justify-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => onEdit?.(t)}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                            title="Sửa phiếu"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDelete?.(t)}
+                            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Xóa phiếu"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -4569,7 +4833,7 @@ export const TicketList: React.FC<TicketListProps> = ({
           </table>
         </div>
 
-        {/* ═══ PAGINATION ═══ */}
+        {/* PAGINATION */}
         {filteredTickets.length > 0 && (
           <div className="border-t border-neutral-200 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 bg-neutral-50/50">
             <div className="text-xs text-neutral-600">
@@ -4586,7 +4850,6 @@ export const TicketList: React.FC<TicketListProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Page size */}
               <select
                 value={pageSize}
                 onChange={(e) => {
@@ -4601,7 +4864,6 @@ export const TicketList: React.FC<TicketListProps> = ({
                 <option value={100}>100 / trang</option>
               </select>
 
-              {/* Prev */}
               <button
                 type="button"
                 disabled={page <= 1}
@@ -4615,7 +4877,6 @@ export const TicketList: React.FC<TicketListProps> = ({
                 {page} / {totalPages}
               </span>
 
-              {/* Next */}
               <button
                 type="button"
                 disabled={page >= totalPages}
@@ -4643,7 +4904,7 @@ import React, { useState, useEffect } from 'react';
 import { Ticket, TicketStatus, SupplyItem } from '../../types';
 import { Clock, Wrench, Package, Plus, Trash2, Upload, X, Check, Save } from 'lucide-react';
 import { useToast } from '../common/Toast';
-import { apiClient } from '@/src/services/apiClient';
+import { apiClient } from '../../services/apiClient';
 
 interface TicketProcessFormProps {
   ticket: Ticket;
@@ -4871,8 +5132,8 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
               <div
                 key={item.name}
                 className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-colors ${selected
-                    ? 'bg-blue-50/70 border-blue-200 text-neutral-900'
-                    : 'bg-neutral-50/70 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
+                  ? 'bg-blue-50/70 border-blue-200 text-neutral-900'
+                  : 'bg-neutral-50/70 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
                   }`}
               >
                 <label className="flex items-center gap-2 cursor-pointer flex-1">
@@ -5004,8 +5265,8 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${isDragging
-              ? 'border-blue-500 bg-blue-50/50'
-              : 'border-neutral-300 hover:border-blue-400 bg-neutral-50/50'
+            ? 'border-blue-500 bg-blue-50/50'
+            : 'border-neutral-300 hover:border-blue-400 bg-neutral-50/50'
             }`}
         >
           <Upload className="w-6 h-6 text-neutral-400 mx-auto mb-1.5" />
@@ -5223,6 +5484,7 @@ import { Header } from '../components/common/Header';
 import { Sidebar, AdminTab } from '../components/common/Sidebar';
 import { AdminOverview } from '../components/admin/AdminOverview';
 import { TicketForm } from '../components/tickets/TicketForm';
+import { TicketList } from '../components/tickets/TicketList'; // ✅ THÊM DÒNG NÀY (fix trang trắng)
 import { DispatchBoard } from '../components/admin/DispatchBoard';
 import { UserManager } from '../components/admin/UserManager';
 import { DeptManager } from '../components/admin/DeptManager';
@@ -5235,6 +5497,7 @@ import { Modal } from '../components/common/Modal';
 import { useToast } from '../components/common/Toast';
 import { useAuth } from '../context/AuthContext';
 import { PriorityBadge } from '../components/common/StatusBadge';
+import { TicketEditModal } from '../components/tickets/TicketEditModal';
 import { Award, Wrench, User as UserIcon, Phone, Building2, ExternalLink, X } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -5244,19 +5507,20 @@ export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Data states
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
-  // Selected ticket for modal / detail
   const [viewingTicket, setViewingTicket] = useState<Ticket | null>(null);
   const [ratingTicket, setRatingTicket] = useState<Ticket | null>(null);
   const [isKpiModalOpen, setIsKpiModalOpen] = useState(false);
-  const [ticketListStatusFilter, setTicketListStatusFilter] = useState<string>('ALL');
-  const [ticketListPriorityFilter, setTicketListPriorityFilter] = useState<string>('ALL');
-  // For Technical Process Tab
+
+  // ✅ State filter cho TicketList — sẽ được set từ KPI cards
+  const [ticketListFilter, setTicketListFilter] = useState<string>('ALL');
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+
+
   const [selectedProcessTicketId, setSelectedProcessTicketId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -5279,17 +5543,13 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    // Polling 30s thay cho realtime storage event
     const timer = setInterval(loadData, 30000);
     return () => clearInterval(timer);
   }, []);
 
-
   const newTicketsCount = tickets.filter((t) => t.status === 'NEW').length;
-  // Without role restriction, all active users can be assigned
   const allStaff = users.filter((u) => u.active);
 
-  // Group queue for process tab
   const queueGroups = useMemo(() => {
     return [
       {
@@ -5323,7 +5583,6 @@ export const AdminDashboard: React.FC = () => {
     ];
   }, [tickets]);
 
-  // Selected process ticket
   const activeProcessTicket = useMemo(() => {
     if (selectedProcessTicketId) {
       const found = tickets.find((t) => t.id === selectedProcessTicketId);
@@ -5332,6 +5591,21 @@ export const AdminDashboard: React.FC = () => {
     const pending = tickets.find((t) => t.status !== 'DONE' && t.status !== 'CANCELLED' && t.status !== 'NEW');
     return pending || tickets[0] || null;
   }, [tickets, selectedProcessTicketId]);
+
+  // ✅ HANDLER MỚI: Từ KPI card → chuyển sang tab "Tất cả phiếu" với filter
+  const handleGoToAllTickets = (statusFilter: string = 'ALL') => {
+    setTicketListFilter(statusFilter);
+    setActiveTab('all-tickets');
+  };
+
+  // ✅ Handler riêng cho Sidebar: khi user bấm menu "Tất cả phiếu" từ sidebar
+  // thì reset filter về ALL
+  const handleSidebarTabChange = (tab: AdminTab) => {
+    if (tab === 'all-tickets') {
+      setTicketListFilter('ALL');
+    }
+    setActiveTab(tab);
+  };
 
   const handleSaveProcess = (updates: {
     status: TicketStatus;
@@ -5372,9 +5646,57 @@ export const AdminDashboard: React.FC = () => {
     loadData();
   };
 
+  const handleDeleteTicket = async (ticket: Ticket) => {
+    if (!confirm(`⚠️ Bạn có chắc muốn XÓA VĨNH VIỄN phiếu [${ticket.code}]?\n\n"${ticket.title}"\n\nHành động này không thể hoàn tác!`)) {
+      return;
+    }
+
+    try {
+      const res = await apiClient.deleteTicket(ticket.id);
+      if (res.success) {
+        toast.success(`Đã xóa phiếu [${ticket.code}]`);
+        loadData();
+      } else {
+        toast.error(res.message || 'Lỗi xóa phiếu');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi kết nối');
+    }
+  };
+
+  // 4. SỬA KHỐI RENDER TicketList (trong activeTab === 'all-tickets')
+  {
+    activeTab === 'all-tickets' && (
+      <TicketList
+        tickets={tickets}
+        onSelectTicket={(t) => setViewingTicket(t)}
+        title={
+          ticketListFilter === 'PROCESSING'
+            ? 'Phiếu đang xử lý'
+            : ticketListFilter === 'DONE'
+              ? 'Phiếu đã hoàn thành'
+              : 'Tất cả phiếu yêu cầu kỹ thuật toàn viện'
+        }
+        showFilters={true}
+        initialStatusFilter={ticketListFilter}
+        onFilterChange={() => setTicketListFilter('ALL')}
+        onEdit={(t) => setEditingTicket(t)}       // ✅ THÊM
+        onDelete={handleDeleteTicket}             // ✅ THÊM
+        canManage={user?.role === 'ADMIN'}        // ✅ THÊM — chỉ ADMIN
+      />
+    )
+  }
+
+  // 5. THÊM MODAL — đặt cạnh RatingModal
+  <TicketEditModal
+    isOpen={!!editingTicket}
+    onClose={() => setEditingTicket(null)}
+    ticket={editingTicket}
+    onSaved={loadData}
+  />
+
   return (
     <div className="min-h-screen bg-[#F5F5F0] flex flex-col">
-      {/* Header */}
       <Header
         showMenuButton={true}
         onMenuToggle={() => setIsMobileSidebarOpen(true)}
@@ -5391,11 +5713,10 @@ export const AdminDashboard: React.FC = () => {
         }
       />
 
-      {/* Main Shell: Sidebar + Content */}
       <div className="flex-1 flex w-full">
         <Sidebar
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleSidebarTabChange}  // ✅ DÙNG HANDLER MỚI
           newTicketsCount={newTicketsCount}
           isOpenMobile={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -5409,8 +5730,7 @@ export const AdminDashboard: React.FC = () => {
                 tickets={tickets}
                 onViewTicket={(t) => setViewingTicket(t)}
                 onGoToDispatch={() => setActiveTab('dispatch')}
-                onGoToProcessing={() => setActiveTab('all-tickets')}  // ✅ THÊM — chuyển sang tab All Tickets
-                onGoToDone={() => setActiveTab('all-tickets')}
+                onGoToAllTickets={handleGoToAllTickets}  // ✅ TRUYỀN HANDLER MỚI
               />
             )}
 
@@ -5420,21 +5740,28 @@ export const AdminDashboard: React.FC = () => {
                 <TicketForm
                   onSuccess={() => {
                     loadData();
+                    setTicketListFilter('ALL');
                     setActiveTab('all-tickets');
                   }}
                 />
               </div>
             )}
 
-            {/* Tab 3: All Tickets */}
+            {/* Tab 3: All Tickets — ✅ NHẬN FILTER TỪ KPI */}
             {activeTab === 'all-tickets' && (
               <TicketList
                 tickets={tickets}
                 onSelectTicket={(t) => setViewingTicket(t)}
-                title="Tất cả phiếu yêu cầu kỹ thuật toàn viện"
+                title={
+                  ticketListFilter === 'PROCESSING'
+                    ? 'Phiếu đang xử lý'
+                    : ticketListFilter === 'DONE'
+                      ? 'Phiếu đã hoàn thành'
+                      : 'Tất cả phiếu yêu cầu kỹ thuật toàn viện'
+                }
                 showFilters={true}
-                initialStatusFilter={ticketListStatusFilter}
-                onFilterChange={() => setTicketListStatusFilter('ALL')}
+                initialStatusFilter={ticketListFilter}
+                onFilterChange={() => setTicketListFilter('ALL')}
               />
             )}
 
@@ -5450,7 +5777,6 @@ export const AdminDashboard: React.FC = () => {
             {/* Tab 5: Technical Resolution Workspace */}
             {activeTab === 'process' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start animate-in fade-in duration-200">
-                {/* Column 1: Queue (4 cols) */}
                 <div className="lg:col-span-4 space-y-4">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
@@ -5521,11 +5847,9 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Column 2: Detail panel & Process Form (8 cols) */}
                 <div className="lg:col-span-8 space-y-5">
                   {activeProcessTicket ? (
                     <div className="space-y-5">
-                      {/* Ticket sender info */}
                       <div className="bg-white rounded-2xl p-6 border border-neutral-200/90 shadow-2xs space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 pb-3">
                           <div>
@@ -5545,7 +5869,6 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Sender details */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-neutral-50 p-3.5 rounded-xl border border-neutral-200/60 text-xs">
                           <div>
                             <span className="text-neutral-400 block flex items-center gap-1">
@@ -5578,42 +5901,13 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Description */}
                         <div>
                           <p className="text-xs text-neutral-700 bg-neutral-50/70 p-3 rounded-xl border border-neutral-200/60 whitespace-pre-wrap leading-relaxed">
                             {activeProcessTicket.description}
                           </p>
                         </div>
-
-                        {/* BEFORE Images */}
-                        {activeProcessTicket.beforeImages && activeProcessTicket.beforeImages.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                              Ảnh hiện trạng ban đầu (BEFORE)
-                            </h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                              {activeProcessTicket.beforeImages.map((img, idx) => (
-                                <div
-                                  key={idx}
-                                  onClick={() => setPreviewImage(img)}
-                                  className="group relative aspect-video rounded-xl overflow-hidden border border-neutral-200 cursor-pointer bg-neutral-100"
-                                >
-                                  <img
-                                    src={img}
-                                    alt={`Hiện trạng ${idx + 1}`}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                  />
-                                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                                    <ExternalLink className="w-4 h-4" />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
 
-                      {/* Technical Processing Form */}
                       <TicketProcessForm
                         ticket={activeProcessTicket}
                         onSave={handleSaveProcess}
@@ -5631,7 +5925,6 @@ export const AdminDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Tab 6: Users Management */}
             {activeTab === 'users' && (
               <UserManager
                 users={users}
@@ -5640,7 +5933,6 @@ export const AdminDashboard: React.FC = () => {
               />
             )}
 
-            {/* Tab 7: Departments Management */}
             {activeTab === 'departments' && (
               <DeptManager
                 departments={departments}
@@ -5648,7 +5940,6 @@ export const AdminDashboard: React.FC = () => {
               />
             )}
 
-            {/* Tab 8: Audit Logs */}
             {activeTab === 'audit-logs' && (
               <AuditLogTable logs={auditLogs} />
             )}
@@ -5656,7 +5947,6 @@ export const AdminDashboard: React.FC = () => {
         </main>
       </div>
 
-      {/* Modal View Ticket Detail */}
       <Modal
         isOpen={!!viewingTicket}
         onClose={() => setViewingTicket(null)}
@@ -5678,7 +5968,6 @@ export const AdminDashboard: React.FC = () => {
         )}
       </Modal>
 
-      {/* Modal Rating */}
       <RatingModal
         isOpen={!!ratingTicket}
         onClose={() => setRatingTicket(null)}
@@ -5686,7 +5975,6 @@ export const AdminDashboard: React.FC = () => {
         onRated={loadData}
       />
 
-      {/* Modal KPI */}
       <TechnicalKpiModal
         isOpen={isKpiModalOpen}
         onClose={() => setIsKpiModalOpen(false)}
@@ -5694,7 +5982,6 @@ export const AdminDashboard: React.FC = () => {
         technicianName={user?.fullName || 'Cán bộ'}
       />
 
-      {/* Lightbox Preview Image */}
       {previewImage && (
         <div
           className="fixed inset-0 z-60 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
@@ -5718,7 +6005,6 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 };
-
 
 
 ════════════════════════════════════════════════════════════
@@ -6473,7 +6759,7 @@ export const apiClient = {
   },
 
   async logout() {
-    try { await request('/auth/logout', { method: 'POST' }); } catch {}
+    try { await request('/auth/logout', { method: 'POST' }); } catch { }
     this.clearToken();
   },
 
@@ -6579,6 +6865,20 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  async updateTicket(ticketId: string, payload: Partial<Ticket>) {
+    return request<{ success: boolean; ticket: Ticket; message?: string }>(
+      `/tickets/${ticketId}`,
+      { method: 'PUT', body: JSON.stringify(payload) }
+    );
+  },
+
+  async deleteTicket(ticketId: string) {
+    return request<{ success: boolean; message?: string }>(
+      `/tickets/${ticketId}`,
+      { method: 'DELETE' }
+    );
   },
 
   async assignTicket(ticketId: string, assigneeId: string) {
@@ -7629,5 +7929,5 @@ export default defineConfig(() => {
   TỔNG KẾT — FE
 ════════════════════════════════════════════════════════════
 
-Tổng số file đã export: 39
-Ngày xuất: 2026-10-11 08:52:30
+Tổng số file đã export: 40
+Ngày xuất: 2026-10-11 12:50:38

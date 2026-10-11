@@ -287,7 +287,7 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
         <div className="bg-emerald-50/70 rounded-2xl p-4 border border-emerald-200 space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> Đánh giá từ khách hàng
+              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> Đánh giá từ đơn vị
             </h4>
             <span className="text-xs text-emerald-700">
               {formatDate(ticket.feedback.submittedAt)}

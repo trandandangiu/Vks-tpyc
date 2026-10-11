@@ -81,9 +81,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
             <GitPullRequest className="w-5 h-5 text-[#B71C1C]" />
             Bảng điều phối kỹ thuật
           </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            Tiếp nhận phiếu mới và phân công cho kỹ thuật viên phụ trách.
-          </p>
+
         </div>
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-50 text-[#B71C1C] border border-red-200 text-xs font-bold">
           <span>Đang chờ phân công:</span>
@@ -98,10 +96,8 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
           <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-8 h-8" />
           </div>
-          <h3 className="font-bold text-neutral-800 text-base">Không còn phiếu chờ điều phối</h3>
-          <p className="text-xs text-neutral-500 mt-1">
-            Tất cả phiếu đã được phân công xử lý.
-          </p>
+          <h3 className="font-bold text-neutral-800 text-base"></h3>
+
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

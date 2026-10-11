@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════╗
 ║  DỰ ÁN: VKS-QLCV-v3 — ROOT
-║  Xuất ngày: 2026-10-11 08:52:37
+║  Xuất ngày: 2026-10-11 12:50:42
 ╚══════════════════════════════════════════════════════════╝
 
 ════════════════════════════════════════════════════════════
@@ -92,6 +92,7 @@
 │   │   │       ├── StarRating.tsx
 │   │   │       ├── TicketCard.tsx
 │   │   │       ├── TicketDetail.tsx
+│   │   │       ├── TicketEditModal.tsx
 │   │   │       ├── TicketForm.tsx
 │   │   │       ├── TicketList.tsx
 │   │   │       └── TicketProcessForm.tsx
@@ -616,4 +617,4 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ════════════════════════════════════════════════════════════
 
 Tổng số file đã export: 5
-Ngày xuất: 2026-10-11 08:52:44
+Ngày xuất: 2026-10-11 12:50:47

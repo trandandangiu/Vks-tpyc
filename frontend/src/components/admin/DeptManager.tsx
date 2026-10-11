@@ -104,10 +104,10 @@ export const DeptManager: React.FC<DeptManagerProps> = ({ departments, onRefresh
         <div>
           <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
             <Building className="w-5 h-5 text-[#B71C1C]" />
-            Quản lý Đơn vị / Phòng ban
+            Quản lý đơn vị
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Danh mục các phòng ban, đơn vị trực thuộc có phát sinh yêu cầu kỹ thuật.
+            Danh mục các phòng ban, đơn vị yêu cầu kỹ thuật.
           </p>
         </div>
 
@@ -127,8 +127,8 @@ export const DeptManager: React.FC<DeptManagerProps> = ({ departments, onRefresh
             <thead>
               <tr className="bg-neutral-50/80 border-b border-neutral-200 text-neutral-500 font-semibold uppercase tracking-wider">
                 <th className="py-3 px-4 w-32">Mã đơn vị</th>
-                <th className="py-3 px-4">Tên đơn vị / Phòng ban</th>
-                <th className="py-3 px-4">Mô tả chức năng</th>
+                <th className="py-3 px-4">Đơn vị</th>
+                <th className="py-3 px-4">Mô tả</th>
                 <th className="py-3 px-4 text-center w-28">Thao tác</th>
               </tr>
             </thead>

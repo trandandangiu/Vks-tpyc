@@ -74,17 +74,7 @@ export const CustomerDashboard: React.FC = () => {
             </button>
           </div>
 
-          <a
-            href="/admin"
-            onClick={(e) => {
-              e.preventDefault();
-              window.history.pushState({}, '', '/admin');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            className="text-xs font-bold text-[#B71C1C] hover:underline"
-          >
-            Vào Không gian làm việc đầy đủ →
-          </a>
+
         </div>
 
         {activeTab === 'create' && (

@@ -8,8 +8,68 @@ import { TicketProcessForm } from '../components/tickets/TicketProcessForm';
 import { TechnicalKpiModal } from '../components/technical/TechnicalKpiModal';
 import { useToast } from '../components/common/Toast';
 import {
-  Award, User, Phone, Building2, ExternalLink, X, FileText,
+  Award,
+  User,
+  Phone,
+  Building2,
+  ExternalLink,
+  X,
+  FileText,
+  Inbox,
+  ArrowLeft,
+  Image as ImageIcon,
+  Layers,
 } from 'lucide-react';
+
+// ─── Cấu hình màu cho từng nhóm trạng thái ───
+type GroupConfig = {
+  id: TicketStatus;
+  title: string;
+  accent: string;      // màu chữ + vạch trái
+  bgSoft: string;      // nền nhạt cho header nhóm
+  border: string;
+  dot: string;
+  badge: string;
+};
+
+const QUEUE_GROUPS: GroupConfig[] = [
+  {
+    id: 'ASSIGNED',
+    title: 'Chờ nhận nhiệm vụ',
+    accent: 'text-indigo-700',
+    bgSoft: 'bg-indigo-50',
+    border: 'border-indigo-200',
+    dot: 'bg-indigo-500',
+    badge: 'bg-indigo-100 text-indigo-800',
+  },
+  {
+    id: 'PROCESSING',
+    title: 'Đang xử lý',
+    accent: 'text-blue-700',
+    bgSoft: 'bg-blue-50',
+    border: 'border-blue-200',
+    dot: 'bg-blue-500',
+    badge: 'bg-blue-100 text-blue-800',
+  },
+  {
+    id: 'WAITING_SUPPLY',
+    title: 'Chờ vật tư',
+    accent: 'text-amber-700',
+    bgSoft: 'bg-amber-50',
+    border: 'border-amber-200',
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-100 text-amber-800',
+  },
+  {
+    id: 'DONE',
+    title: 'Hoàn thành',
+    accent: 'text-emerald-700',
+    bgSoft: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    dot: 'bg-emerald-500',
+    badge: 'bg-emerald-100 text-emerald-800',
+  },
+];
 
 export const TechnicalDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -38,12 +98,22 @@ export const TechnicalDashboard: React.FC = () => {
     return () => clearInterval(timer);
   }, [user?.id]);
 
-  const queueGroups = useMemo(() => [
-    { id: 'ASSIGNED' as TicketStatus, title: 'Chờ nhận nhiệm vụ', colorClass: 'border-blue-400 bg-blue-50/50 text-blue-800', dotClass: 'bg-blue-500', tickets: tickets.filter((t) => t.status === 'ASSIGNED') },
-    { id: 'PROCESSING' as TicketStatus, title: 'Đang xử lý', colorClass: 'border-amber-400 bg-amber-50/50 text-amber-800', dotClass: 'bg-amber-500', tickets: tickets.filter((t) => t.status === 'PROCESSING') },
-    { id: 'WAITING_SUPPLY' as TicketStatus, title: 'Chờ vật tư', colorClass: 'border-orange-400 bg-orange-50/50 text-orange-800', dotClass: 'bg-orange-500', tickets: tickets.filter((t) => t.status === 'WAITING_SUPPLY') },
-    { id: 'DONE' as TicketStatus, title: 'Hoàn thành', colorClass: 'border-emerald-400 bg-emerald-50/50 text-emerald-800', dotClass: 'bg-emerald-500', tickets: tickets.filter((t) => t.status === 'DONE') },
-  ], [tickets]);
+  // ─── Gộp nhóm theo trạng thái ───
+  const queueGroups = useMemo(() => {
+    return QUEUE_GROUPS.map((cfg) => ({
+      ...cfg,
+      tickets: tickets.filter((t) => t.status === cfg.id),
+    }));
+  }, [tickets]);
+
+  const totalInQueue = useMemo(
+    () =>
+      queueGroups.reduce(
+        (sum, g) => sum + (g.id === 'DONE' ? 0 : g.tickets.length),
+        0
+      ),
+    [queueGroups]
+  );
 
   const activeTicket = useMemo(() => {
     if (selectedTicketId) {
@@ -54,6 +124,7 @@ export const TechnicalDashboard: React.FC = () => {
     return pending || tickets[0] || null;
   }, [tickets, selectedTicketId]);
 
+  // ─── Xử lý cập nhật ───
   const handleSaveProgress = async (updates: {
     status: TicketStatus;
     scheduledAt?: string;
@@ -107,58 +178,87 @@ export const TechnicalDashboard: React.FC = () => {
     }
   };
 
+  const goToAdmin = () => {
+    window.history.pushState({}, '', '/admin');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F0] flex flex-col">
+      {/* ═══ HEADER ═══ */}
       <Header
         rightAction={
           <div className="flex items-center gap-2">
-            <a
-              href="/admin"
-              onClick={(e) => {
-                e.preventDefault();
-                window.history.pushState({}, '', '/admin');
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }}
-              className="text-xs font-bold text-[#B71C1C] hover:underline px-2 hidden sm:inline"
+            <button
+              type="button"
+              onClick={goToAdmin}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/25 transition-all cursor-pointer backdrop-blur-sm"
+              title="Về không gian quản trị"
             >
-              ← Toàn bộ hệ thống
-            </a>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Toàn bộ hệ thống
+            </button>
             <button
               type="button"
               onClick={() => setIsKpiModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs border border-white/30 transition-all cursor-pointer backdrop-blur-sm"
+              title="Xem chỉ số KPI kỹ thuật"
             >
-              <Award className="w-4 h-4 text-white" />
-              <span>Báo cáo KPI</span>
+              <Award className="w-4 h-4" />
+              <span className="hidden sm:inline">Báo cáo KPI</span>
             </button>
           </div>
         }
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5">
+        {/* Thanh thông tin nhanh */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 bg-white border border-neutral-200 rounded-full px-3 py-1">
+            <Layers className="w-3.5 h-3.5 text-[#B71C1C]" />
+            Tổng phiếu được giao: <strong className="text-neutral-900">{tickets.length}</strong>
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-full px-3 py-1">
+            <Inbox className="w-3.5 h-3.5" />
+            Đang chờ xử lý: <strong>{totalInQueue}</strong>
+          </span>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          <div className="lg:col-span-4 space-y-4">
+          {/* ═══ LEFT: Hàng đợi ═══ */}
+          <div className="lg:col-span-4 space-y-3">
             <div className="flex items-center justify-between px-1">
               <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                Hàng đợi ({tickets.length})
+                Hàng đợi xử lý
+              </span>
+              <span className="text-[11px] text-neutral-400">
+                Bấm để xem chi tiết
               </span>
             </div>
 
-            <div className="space-y-4 max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-1">
               {queueGroups.map((group) => (
                 <div key={group.id} className="space-y-2">
-                  <div className={`flex items-center justify-between px-3 py-1.5 rounded-xl border text-xs font-bold ${group.colorClass}`}>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${group.dotClass}`} />
-                      <span>{group.title}</span>
+                  {/* Header nhóm */}
+                  <div
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl border ${group.border} ${group.bgSoft}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${group.dot}`} />
+                      <span className={`text-xs font-bold ${group.accent}`}>
+                        {group.title}
+                      </span>
                     </div>
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-white/80 font-mono">
+                    <span
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${group.badge}`}
+                    >
                       {group.tickets.length}
                     </span>
                   </div>
 
+                  {/* Danh sách phiếu */}
                   {group.tickets.length === 0 ? (
-                    <div className="text-[11px] text-neutral-400 italic px-3 py-1">
+                    <div className="text-[11px] text-neutral-400 italic px-3 py-1.5">
                       Không có phiếu
                     </div>
                   ) : (
@@ -169,26 +269,40 @@ export const TechnicalDashboard: React.FC = () => {
                           <div
                             key={t.id}
                             onClick={() => setSelectedTicketId(t.id)}
-                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                            className={`relative p-3.5 rounded-2xl border transition-all cursor-pointer bg-white ${
                               isSelected
-                                ? 'bg-white border-[#B71C1C] ring-2 ring-red-800/10 shadow-md'
-                                : 'bg-white border-neutral-200 hover:border-neutral-300'
+                                ? 'border-[#B71C1C] ring-2 ring-[#B71C1C]/15 shadow-md'
+                                : 'border-neutral-200 hover:border-neutral-300 hover:shadow-sm'
                             }`}
                           >
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="font-mono font-bold text-xs bg-neutral-100 px-2 py-0.5 rounded text-neutral-800">
-                                {t.code}
-                              </span>
-                              <PriorityBadge priority={t.priority} size="sm" />
-                            </div>
-                            <h4 className="font-bold text-xs text-neutral-900 line-clamp-2 mb-1">
-                              {t.title}
-                            </h4>
-                            <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-1 border-t border-neutral-100">
-                              <span className="truncate max-w-[140px]">{t.departmentName}</span>
-                              <span className="text-neutral-400 font-mono">
-                                {new Date(t.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
-                              </span>
+                            {/* Vạch trái màu nhóm */}
+                            <span
+                              className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${group.dot}`}
+                            />
+
+                            <div className="pl-2">
+                              <div className="flex items-center justify-between gap-2 mb-1.5">
+                                <span className="font-mono font-bold text-[11px] bg-neutral-100 text-neutral-800 px-2 py-0.5 rounded">
+                                  {t.code}
+                                </span>
+                                <PriorityBadge priority={t.priority} size="sm" />
+                              </div>
+
+                              <h4 className="font-bold text-xs text-neutral-900 line-clamp-2 leading-snug mb-1.5">
+                                {t.title}
+                              </h4>
+
+                              <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-1.5 border-t border-neutral-100">
+                                <span className="truncate max-w-[150px]">
+                                  {t.departmentName}
+                                </span>
+                                <span className="text-neutral-400 font-mono shrink-0 ml-2">
+                                  {new Date(t.createdAt).toLocaleDateString(
+                                    'vi-VN',
+                                    { day: '2-digit', month: '2-digit' }
+                                  )}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -200,75 +314,133 @@ export const TechnicalDashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* ═══ RIGHT: Chi tiết + Form xử lý ═══ */}
           <div className="lg:col-span-8 space-y-5">
             {activeTicket ? (
-              <div className="space-y-5">
-                <div className="bg-white rounded-2xl p-6 border border-neutral-200/90 shadow-2xs space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 pb-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono font-bold text-sm bg-neutral-100 text-neutral-800 px-2.5 py-0.5 rounded-lg border border-neutral-200">
-                          {activeTicket.code}
-                        </span>
-                        <StatusBadge status={activeTicket.status} size="sm" />
-                        <PriorityBadge priority={activeTicket.priority} size="sm" />
+              <>
+                {/* Card thông tin phiếu */}
+                <div className="bg-white rounded-2xl border border-neutral-200/90 shadow-2xs overflow-hidden">
+                  {/* Dải màu trên đầu card */}
+                  <div className="h-1 bg-gradient-to-r from-[#8E0000] via-[#B71C1C] to-[#8E0000]" />
+
+                  <div className="p-5 sm:p-6 space-y-5">
+                    {/* Tiêu đề + badge */}
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-4 border-b border-neutral-100">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className="font-mono font-bold text-sm bg-neutral-100 text-neutral-800 px-2.5 py-0.5 rounded-lg border border-neutral-200">
+                            {activeTicket.code}
+                          </span>
+                          <StatusBadge status={activeTicket.status} size="sm" />
+                          <PriorityBadge priority={activeTicket.priority} size="sm" />
+                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-red-50 text-[#B71C1C] border border-red-100 font-semibold">
+                            {activeTicket.category}
+                          </span>
+                        </div>
+                        <h2 className="text-base sm:text-lg font-bold text-neutral-900 leading-snug">
+                          {activeTicket.title}
+                        </h2>
                       </div>
-                      <h2 className="text-lg font-bold text-neutral-900 leading-snug">
-                        {activeTicket.title}
-                      </h2>
                     </div>
-                    <div className="text-right text-xs text-neutral-500">
-                      <div>Loại: <span className="font-semibold text-[#B71C1C]">{activeTicket.category}</span></div>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-neutral-50 p-3.5 rounded-xl border border-neutral-200/60 text-xs">
-                    <div>
-                      <span className="text-neutral-400 block flex items-center gap-1">
-                        <User className="w-3.5 h-3.5" /> Người gửi:
-                      </span>
-                      <span className="font-semibold text-neutral-800">
-                        {activeTicket.creatorName} ({activeTicket.creatorPosition})
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-400 block flex items-center gap-1">
-                        <Building2 className="w-3.5 h-3.5" /> Đơn vị:
-                      </span>
-                      <span className="font-medium text-neutral-800 truncate block">
-                        {activeTicket.departmentName}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-400 block flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5" /> SĐT:
-                      </span>
-                      <a href={`tel:${activeTicket.creatorPhone}`} className="font-bold text-blue-600 hover:underline">
-                        {activeTicket.creatorPhone}
-                      </a>
-                    </div>
-                  </div>
+                    {/* Grid thông tin người gửi */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-neutral-50 rounded-xl p-3 border border-neutral-200/60">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                          <User className="w-3 h-3" />
+                          Người gửi
+                        </div>
+                        <div className="text-xs font-bold text-neutral-900 truncate">
+                          {activeTicket.creatorName}
+                        </div>
+                        <div className="text-[11px] text-neutral-500 truncate">
+                          {activeTicket.creatorPosition}
+                        </div>
+                      </div>
 
-                  <div>
-                    <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5 text-[#B71C1C]" /> Nội dung sự cố:
-                    </h4>
-                    <p className="text-xs text-neutral-700 bg-neutral-50/70 p-3 rounded-xl border border-neutral-200/60 whitespace-pre-wrap leading-relaxed">
-                      {activeTicket.description}
-                    </p>
+                      <div className="bg-neutral-50 rounded-xl p-3 border border-neutral-200/60">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                          <Building2 className="w-3 h-3" />
+                          Đơn vị
+                        </div>
+                        <div className="text-xs font-medium text-neutral-800 line-clamp-2">
+                          {activeTicket.departmentName}
+                        </div>
+                      </div>
+
+                      <div className="bg-neutral-50 rounded-xl p-3 border border-neutral-200/60">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                          <Phone className="w-3 h-3" />
+                          Liên hệ
+                        </div>
+                        <a
+                          href={`tel:${activeTicket.creatorPhone}`}
+                          className="text-xs font-bold text-[#B71C1C] hover:underline"
+                        >
+                          {activeTicket.creatorPhone}
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Nội dung sự cố */}
+                    <div>
+                      <h4 className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-[#B71C1C]" />
+                        Nội dung sự cố
+                      </h4>
+                      <p className="text-xs text-neutral-700 bg-neutral-50/70 p-3.5 rounded-xl border border-neutral-200/60 whitespace-pre-wrap leading-relaxed">
+                        {activeTicket.description}
+                      </p>
+                    </div>
+
+                    {/* Ảnh BEFORE nếu có */}
+                    {activeTicket.beforeImages &&
+                      activeTicket.beforeImages.length > 0 && (
+                        <div>
+                          <h4 className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <ImageIcon className="w-3.5 h-3.5 text-[#B71C1C]" />
+                            Ảnh hiện trạng ban đầu ({activeTicket.beforeImages.length})
+                          </h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {activeTicket.beforeImages.map((img, idx) => (
+                              <div
+                                key={idx}
+                                onClick={() => setPreviewImage(img)}
+                                className="group relative aspect-video rounded-xl overflow-hidden border border-neutral-200 cursor-pointer bg-neutral-100"
+                              >
+                                <img
+                                  src={img}
+                                  alt={`Ảnh ${idx + 1}`}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                  <ExternalLink className="w-4 h-4" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
                 </div>
 
+                {/* Form xử lý */}
                 <TicketProcessForm
                   ticket={activeTicket}
                   onSave={handleSaveProgress}
                   onComplete={handleCompleteTicket}
                 />
-              </div>
+              </>
             ) : (
               <div className="bg-white rounded-2xl p-12 text-center border border-neutral-200 shadow-2xs">
-                <p className="text-sm text-neutral-500">
-                  Chọn một phiếu để xem chi tiết.
+                <div className="w-14 h-14 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center mx-auto mb-3">
+                  <FileText className="w-7 h-7" />
+                </div>
+                <p className="text-sm font-semibold text-neutral-700">
+                  Chưa có phiếu nào
+                </p>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Chọn một phiếu bên trái để xem chi tiết và cập nhật xử lý.
                 </p>
               </div>
             )}
@@ -276,6 +448,7 @@ export const TechnicalDashboard: React.FC = () => {
         </div>
       </main>
 
+      {/* Modal KPI */}
       <TechnicalKpiModal
         isOpen={isKpiModalOpen}
         onClose={() => setIsKpiModalOpen(false)}
@@ -284,16 +457,21 @@ export const TechnicalDashboard: React.FC = () => {
         technicianId={user?.id}
       />
 
+      {/* Lightbox xem ảnh */}
       {previewImage && (
         <div
-          className="fixed inset-0 z-60 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setPreviewImage(null)}
         >
           <div className="relative max-w-4xl max-h-[90vh]">
-            <img src={previewImage} alt="Preview" className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl" />
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
+            />
             <button
               onClick={() => setPreviewImage(null)}
-              className="absolute -top-10 right-0 text-white hover:text-amber-300 p-2 text-sm font-semibold flex items-center gap-1 cursor-pointer"
+              className="absolute -top-10 right-0 text-white hover:text-white/80 p-2 text-sm font-semibold flex items-center gap-1 cursor-pointer"
             >
               <X className="w-5 h-5" /> Đóng
             </button>

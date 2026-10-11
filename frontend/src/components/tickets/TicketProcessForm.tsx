@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, TicketStatus, SupplyItem } from '../../types';
-import { Clock, Wrench, Package, Plus, Trash2, Upload, X, Check, Save } from 'lucide-react';
+import {
+  Clock,
+  Wrench,
+  Package,
+  Plus,
+  Upload,
+  X,
+  Check,
+  Save,
+} from 'lucide-react';
 import { useToast } from '../common/Toast';
 import { apiClient } from '../../services/apiClient';
 
@@ -23,14 +32,17 @@ interface TicketProcessFormProps {
   }) => void;
 }
 
-const COMMON_SUPPLIES = [
-  { name: 'Switch 8-port Gigabit', defaultUnit: 'cái' },
-  { name: 'Cáp mạng Cat6', defaultUnit: 'mét' },
-  { name: 'Hạt mạng RJ45', defaultUnit: 'hạt' },
-  { name: 'SSD 512GB NVMe', defaultUnit: 'ổ' },
-  { name: 'RAM 8GB DDR4', defaultUnit: 'thanh' },
-  { name: 'Cao su kéo giấy máy scan', defaultUnit: 'bộ' },
-];
+// Chuyển ISO string → giá trị cho input datetime-local (theo local timezone)
+const toLocalDatetimeValue = (iso?: string): string => {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  } catch {
+    return '';
+  }
+};
 
 export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
   ticket,
@@ -39,96 +51,113 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
 }) => {
   const toast = useToast();
 
+  // ─── State form ───
   const [status, setStatus] = useState<TicketStatus>(ticket.status);
-  const [scheduledAt, setScheduledAt] = useState<string>(() => {
-    if (!ticket.scheduledAt) return '';
-    try {
-      const d = new Date(ticket.scheduledAt);
-      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    } catch {
-      return '';
-    }
-  });
-  const [technicalNotes, setTechnicalNotes] = useState<string>(ticket.technicalNotes || '');
+  const [scheduledAt, setScheduledAt] = useState<string>(
+    toLocalDatetimeValue(ticket.scheduledAt)
+  );
+  const [technicalNotes, setTechnicalNotes] = useState<string>(
+    ticket.technicalNotes || ticket.processNote || ''
+  );
   const [supplies, setSupplies] = useState<SupplyItem[]>(ticket.supplies || []);
-  const [afterImages, setAfterImages] = useState<string[]>(ticket.afterImages || []);
+  const [afterImages, setAfterImages] = useState<string[]>(
+    ticket.afterImages || []
+  );
+
+  // ─── State cho phần nhập vật tư tự do ───
   const [customSupplyName, setCustomSupplyName] = useState('');
+  const [customSupplyQty, setCustomSupplyQty] = useState<number>(1);
   const [customSupplyUnit, setCustomSupplyUnit] = useState('cái');
-  const [isAddingCustom, setIsAddingCustom] = useState(false);
+
+  // ─── State kéo-thả ảnh ───
   const [isDragging, setIsDragging] = useState(false);
 
-  // Sync state if ticket changes
+  // ─── Sync state khi đổi ticket ───
   useEffect(() => {
     setStatus(ticket.status);
-    if (ticket.scheduledAt) {
-      try {
-        const d = new Date(ticket.scheduledAt);
-        setScheduledAt(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
-      } catch {
-        setScheduledAt('');
-      }
-    } else {
-      setScheduledAt('');
-    }
-    setTechnicalNotes(ticket.technicalNotes || '');
+    setScheduledAt(toLocalDatetimeValue(ticket.scheduledAt));
+    setTechnicalNotes(ticket.technicalNotes || ticket.processNote || '');
     setSupplies(ticket.supplies || []);
     setAfterImages(ticket.afterImages || []);
+
+    // Reset ô nhập vật tư
+    setCustomSupplyName('');
+    setCustomSupplyQty(1);
+    setCustomSupplyUnit('cái');
   }, [ticket.id]);
 
-  // Toggle common supply item
-  const handleToggleCommonSupply = (name: string, unit: string) => {
-    const existing = supplies.find((s) => s.name === name);
-    if (existing) {
-      setSupplies((prev) => prev.filter((s) => s.name !== name));
-    } else {
-      setSupplies((prev) => [...prev, { name, quantity: 1, unit }]);
-    }
-  };
-
-  const handleUpdateSupplyQty = (name: string, qty: number) => {
-    if (qty <= 0) {
-      setSupplies((prev) => prev.filter((s) => s.name !== name));
-      return;
-    }
-    setSupplies((prev) =>
-      prev.map((s) => (s.name === name ? { ...s, quantity: qty } : s))
-    );
-  };
-
+  // ─── Thêm vật tư ───
   const handleAddCustomSupply = () => {
-    if (!customSupplyName.trim()) return;
-    setSupplies((prev) => [
-      ...prev,
-      { name: customSupplyName.trim(), quantity: 1, unit: customSupplyUnit || 'cái' },
-    ]);
+    const name = customSupplyName.trim();
+    if (!name) return;
+
+    const qty = Math.max(1, Number(customSupplyQty) || 1);
+    const unit = customSupplyUnit.trim() || 'cái';
+
+    // Nếu trùng tên (không phân biệt hoa thường) → cộng dồn số lượng
+    const existingIndex = supplies.findIndex(
+      (s) => s.name.toLowerCase() === name.toLowerCase()
+    );
+
+    if (existingIndex >= 0) {
+      setSupplies((prev) =>
+        prev.map((s, i) =>
+          i === existingIndex ? { ...s, quantity: s.quantity + qty } : s
+        )
+      );
+    } else {
+      setSupplies((prev) => [...prev, { name, quantity: qty, unit }]);
+    }
+
+    // Reset ô nhập
     setCustomSupplyName('');
-    setIsAddingCustom(false);
+    setCustomSupplyQty(1);
+    setCustomSupplyUnit('cái');
   };
 
-  // After image upload
+  const handleRemoveSupply = (index: number) => {
+    setSupplies((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleClearAllSupplies = () => {
+    if (supplies.length === 0) return;
+    if (!confirm(`Xóa tất cả ${supplies.length} vật tư đã nhập?`)) return;
+    setSupplies([]);
+  };
+
+  // ─── Upload ảnh AFTER ───
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     processAfterFiles(Array.from(e.target.files));
+    e.target.value = ''; // cho phép chọn lại cùng file
   };
 
   const processAfterFiles = async (files: File[]) => {
-    const valid = files.filter((f) => f.type.startsWith('image/')).slice(0, 4 - afterImages.length);
+    const valid = files
+      .filter((f) => f.type.startsWith('image/'))
+      .slice(0, 4 - afterImages.length);
+
     if (valid.length === 0) {
-      toast.warning('Chỉ chấp nhận tệp hình ảnh');
+      toast.warning('Chỉ chấp nhận tệp hình ảnh (tối đa 4 ảnh)');
       return;
     }
 
     for (const file of valid) {
       try {
-        // ✅ Upload lên BE
-        await apiClient.uploadAttachment(ticket.id, file, 'AFTER');
-      } catch (err) {
+        const res = await apiClient.uploadAttachment(ticket.id, file, 'AFTER');
+        // Nếu BE trả về URL hoặc attachment → thêm vào preview
+        const url =
+          res?.attachment?.url ||
+          res?.attachment?.filePath ||
+          URL.createObjectURL(file);
+
+        setAfterImages((prev) => [...prev, url]);
+        toast.success(`Đã tải ảnh: ${file.name}`);
+      } catch (err: any) {
         console.error('Lỗi upload AFTER:', err);
-        toast.error(`Lỗi upload ảnh ${file.name}`);
+        toast.error(`Lỗi upload ảnh ${file.name}: ${err.message || ''}`);
       }
     }
-    // Reload lại attachments
-    onSave({ /* ... */ });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -152,10 +181,13 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
     setAfterImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // ─── Submit ───
   const handleSaveClick = () => {
     onSave({
       status,
-      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+      scheduledAt: scheduledAt
+        ? new Date(scheduledAt).toISOString()
+        : undefined,
       technicalNotes,
       supplies,
       afterImages,
@@ -163,9 +195,18 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
   };
 
   const handleCompleteClick = () => {
+    if (supplies.length === 0) {
+      const ok = confirm(
+        'Chưa nhập vật tư nào. Vẫn hoàn thành phiếu?'
+      );
+      if (!ok) return;
+    }
+
     onComplete({
       status: 'DONE',
-      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+      scheduledAt: scheduledAt
+        ? new Date(scheduledAt).toISOString()
+        : undefined,
       technicalNotes,
       supplies,
       afterImages,
@@ -173,19 +214,22 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
     });
   };
 
+  // ─── Render ───
   return (
     <div className="bg-white rounded-2xl p-5 border border-neutral-200 space-y-6">
+      {/* Header */}
       <div className="border-b border-neutral-100 pb-3 flex items-center justify-between">
         <h3 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
-          <Wrench className="w-4 h-4 text-blue-600" />
+          <Wrench className="w-4 h-4 text-[#B71C1C]" />
           Tiến trình xử lý kỹ thuật
         </h3>
-        <span className="text-xs text-neutral-400">Cập nhật bởi Kỹ thuật viên</span>
+        <span className="text-xs text-neutral-400">
+    
+        </span>
       </div>
 
-      {/* Row 1: Scheduled Time & Status */}
+      {/* Row 1: Hẹn giờ + Trạng thái */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Scheduled time */}
         <div>
           <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-neutral-500" /> Hẹn giờ xử lý
@@ -194,11 +238,10 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
             type="datetime-local"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
-            className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm font-medium text-neutral-800"
+            className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-sm font-medium text-neutral-800 outline-none"
           />
         </div>
 
-        {/* Status Dropdown */}
         <div>
           <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
             Trạng thái phiếu
@@ -206,7 +249,7 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as TicketStatus)}
-            className="w-full px-3 py-2 bg-white border border-neutral-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm font-semibold text-neutral-800 cursor-pointer"
+            className="w-full px-3 py-2 bg-white border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-sm font-semibold text-neutral-800 cursor-pointer outline-none"
           >
             <option value="ASSIGNED">Đã phân công (Chờ nhận)</option>
             <option value="PROCESSING">Đang xử lý</option>
@@ -216,129 +259,114 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
         </div>
       </div>
 
-      {/* Section: Supplies */}
+      {/* Vật tư & Linh kiện */}
       <div className="space-y-3">
         <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-1.5">
-          <Package className="w-3.5 h-3.5 text-amber-600" /> Vật tư & Linh kiện cần bổ sung
+          <Package className="w-3.5 h-3.5 text-amber-600" />
+          Vật tư cần bổ sung
         </label>
 
-        {/* Checkbox list with quantities */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {COMMON_SUPPLIES.map((item) => {
-            const selected = supplies.find((s) => s.name === item.name);
-            return (
-              <div
-                key={item.name}
-                className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-colors ${selected
-                  ? 'bg-blue-50/70 border-blue-200 text-neutral-900'
-                  : 'bg-neutral-50/70 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
-                  }`}
-              >
-                <label className="flex items-center gap-2 cursor-pointer flex-1">
-                  <input
-                    type="checkbox"
-                    checked={!!selected}
-                    onChange={() => handleToggleCommonSupply(item.name, item.defaultUnit)}
-                    className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="font-medium text-xs truncate">{item.name}</span>
-                </label>
+        {/* Ô nhập vật tư */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input
+            type="text"
+            placeholder="Tên vật tư (vd: Switch 8-port, Cáp Cat6...)"
+            value={customSupplyName}
+            onChange={(e) => setCustomSupplyName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddCustomSupply();
+              }
+            }}
+            className="flex-1 px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 outline-none"
+          />
 
-                {selected && (
-                  <div className="flex items-center gap-1.5 ml-2 shrink-0">
-                    <input
-                      type="number"
-                      min={1}
-                      max={999}
-                      value={selected.quantity}
-                      onChange={(e) =>
-                        handleUpdateSupplyQty(item.name, parseInt(e.target.value) || 1)
-                      }
-                      className="w-14 px-2 py-1 bg-white border border-blue-300 rounded-lg text-xs font-bold text-center focus:outline-none"
-                    />
-                    <span className="text-[11px] text-neutral-500">{selected.unit}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Custom supply items */}
-        {supplies.filter((s) => !COMMON_SUPPLIES.some((cs) => cs.name === s.name)).length > 0 && (
-          <div className="pt-2">
-            <span className="text-xs font-semibold text-neutral-600 block mb-1.5">
-              Vật tư khác đã thêm:
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {supplies
-                .filter((s) => !COMMON_SUPPLIES.some((cs) => cs.name === s.name))
-                .map((s, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-neutral-100 border border-neutral-200 text-xs font-medium text-neutral-800"
-                  >
-                    <span>{s.name}</span>
-                    <span className="text-[#B71C1C] font-bold">
-                      x{s.quantity} {s.unit}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setSupplies((prev) => prev.filter((item) => item.name !== s.name))}
-                      className="text-neutral-400 hover:text-red-600 ml-1 cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-            </div>
-          </div>
-        )}
-
-        {/* Add custom supply toggle */}
-        {isAddingCustom ? (
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2">
             <input
-              type="text"
-              placeholder="Tên vật tư mới..."
-              value={customSupplyName}
-              onChange={(e) => setCustomSupplyName(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-xs border border-neutral-300 rounded-xl focus:border-blue-500 focus:outline-none"
+              type="number"
+              min={1}
+              max={999}
+              placeholder="SL"
+              value={customSupplyQty}
+              onChange={(e) =>
+                setCustomSupplyQty(Math.max(1, parseInt(e.target.value) || 1))
+              }
+              className="w-16 px-2 py-2 text-xs border border-neutral-300 rounded-xl text-center font-bold focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 outline-none"
             />
+
             <input
               type="text"
-              placeholder="Đơn vị (cái, mét...)"
+              placeholder="Đơn vị"
               value={customSupplyUnit}
               onChange={(e) => setCustomSupplyUnit(e.target.value)}
-              className="w-28 px-3 py-1.5 text-xs border border-neutral-300 rounded-xl focus:border-blue-500 focus:outline-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddCustomSupply();
+                }
+              }}
+              className="w-24 px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 outline-none"
             />
+
             <button
               type="button"
               onClick={handleAddCustomSupply}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 cursor-pointer"
+              disabled={!customSupplyName.trim()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#B71C1C] hover:bg-[#7F0E0E] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-colors whitespace-nowrap"
             >
+              <Plus className="w-3.5 h-3.5" />
               Thêm
             </button>
-            <button
-              type="button"
-              onClick={() => setIsAddingCustom(false)}
-              className="p-1.5 text-neutral-400 hover:text-neutral-600 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          </div>
+        </div>
+
+        {/* Danh sách vật tư đã nhập */}
+        {supplies.length > 0 ? (
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
+                Đã thêm ({supplies.length})
+              </span>
+              <button
+                type="button"
+                onClick={handleClearAllSupplies}
+                className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer"
+              >
+                Xóa tất cả
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {supplies.map((s, idx) => (
+                <span
+                  key={`${s.name}-${idx}`}
+                  className="inline-flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-lg bg-red-50 border border-red-200 text-xs text-neutral-800"
+                >
+                  <span className="font-medium">{s.name}</span>
+                  <span className="px-1.5 py-0.5 rounded-md bg-[#B71C1C] text-white text-[11px] font-bold">
+                    x{s.quantity} {s.unit}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSupply(idx)}
+                    className="p-0.5 text-neutral-400 hover:text-red-600 hover:bg-white rounded transition-colors cursor-pointer"
+                    title="Xóa vật tư này"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setIsAddingCustom(true)}
-            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer py-1"
-          >
-            <Plus className="w-3.5 h-3.5" /> Thêm vật tư khác
-          </button>
+          <p className="text-[11px] text-neutral-400 italic px-1">
+          
+          </p>
         )}
       </div>
 
-      {/* Technical Notes Textarea */}
+      {/* Ghi chú kỹ thuật */}
       <div>
         <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
           Ghi chú kỹ thuật / Tiến độ thực hiện
@@ -348,29 +376,30 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
           value={technicalNotes}
           onChange={(e) => setTechnicalNotes(e.target.value)}
           placeholder="Ghi lại nguyên nhân lỗi, biện pháp đã thực hiện, kết quả kiểm tra..."
-          className="w-full px-3.5 py-2.5 bg-neutral-50/50 border border-neutral-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm text-neutral-800 leading-relaxed"
+          className="w-full px-3.5 py-2.5 bg-neutral-50/50 border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-sm text-neutral-800 leading-relaxed outline-none"
         />
       </div>
 
-      {/* Upload AFTER images Drag & Drop */}
+      {/* Upload ảnh AFTER */}
       <div>
         <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
-          Ảnh nghiệm thu sau xử lý (AFTER)
+          Ảnh nghiệm thu sau xử lý 
         </label>
 
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${isDragging
-            ? 'border-blue-500 bg-blue-50/50'
-            : 'border-neutral-300 hover:border-blue-400 bg-neutral-50/50'
-            }`}
+          className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${
+            isDragging
+              ? 'border-[#B71C1C] bg-red-50/50'
+              : 'border-neutral-300 hover:border-[#B71C1C]/50 bg-neutral-50/50'
+          }`}
         >
           <Upload className="w-6 h-6 text-neutral-400 mx-auto mb-1.5" />
           <p className="text-xs text-neutral-600">
             Kéo thả ảnh kết quả hoặc{' '}
-            <label className="text-blue-600 font-bold hover:underline cursor-pointer">
+            <label className="text-[#B71C1C] font-bold hover:underline cursor-pointer">
               tải ảnh lên
               <input
                 type="file"
@@ -381,9 +410,11 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
               />
             </label>
           </p>
+          <p className="text-[10px] text-neutral-400 mt-1">
+            Tối đa 4 ảnh
+          </p>
         </div>
 
-        {/* After images previews */}
         {afterImages.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-2.5">
             {afterImages.map((img, idx) => (
@@ -391,11 +422,16 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
                 key={idx}
                 className="relative aspect-video rounded-xl overflow-hidden border border-neutral-200 group bg-neutral-100"
               >
-                <img src={img} alt="Ảnh sau xử lý" className="w-full h-full object-cover" />
+                <img
+                  src={img}
+                  alt={`Ảnh sau xử lý ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
                 <button
                   type="button"
                   onClick={() => removeAfterImage(idx)}
                   className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-600 text-white rounded-lg transition-colors cursor-pointer"
+                  title="Xóa ảnh"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -405,7 +441,7 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
         )}
       </div>
 
-      {/* Buttons: LƯU (xám) + HOÀN THÀNH (xanh lá) */}
+      {/* Buttons */}
       <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-100">
         <button
           type="button"

@@ -158,10 +158,9 @@ export const INCIDENT_CATEGORIES = [
 ];
 
 export const CREATOR_POSITIONS = [
-  'Kiểm sát viên cao cấp',
+  
   'Kiểm sát viên trung cấp',
   'Kiểm sát viên sơ cấp',
-  'Kiểm tra viên chính',
   'Kiểm tra viên',
   'Chuyên viên',
   'Khác',

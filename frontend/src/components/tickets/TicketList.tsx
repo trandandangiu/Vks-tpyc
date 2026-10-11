@@ -227,12 +227,8 @@ export const TicketList: React.FC<TicketListProps> = ({
                 className="w-full pl-8 pr-8 py-2 text-xs font-semibold border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B71C1C]/20 focus:border-[#B71C1C] bg-white cursor-pointer appearance-none"
               >
                 <option value="ALL">Tất cả trạng thái</option>
-                <option value="PROCESSING">Đang xử lý (gộp 3 trạng thái)</option>
-                <option value="NEW">Chờ điều phối</option>
-                <option value="ASSIGNED">Đã phân công</option>
-                <option value="WAITING_SUPPLY">Chờ vật tư</option>
+                <option value="PROCESSING">Đang xử lý</option>
                 <option value="DONE">Hoàn thành</option>
-                <option value="CANCELLED">Đã hủy</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
             </div>

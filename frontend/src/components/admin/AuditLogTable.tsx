@@ -72,7 +72,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs }) => {
         <div>
           <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-[#B71C1C]" />
-            Nhật ký kiểm toán hệ thống (Audit Logs)
+            Nhật ký hệ thống
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
             Lưu vết tự động tất cả các thao tác nghiệp vụ, điều phối, thay đổi trạng thái và an ninh.

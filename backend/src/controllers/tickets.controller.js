@@ -27,18 +27,7 @@ export const ticketsController = {
       res.json(await ticketsService.remove(req.params.id, req.user));
     } catch (err) { next(err); }
   },
-  async assign(req, res, next) {
-    try {
-      const ticket = await ticketsService.assign(req.params.id, req.body, req.user);
-      res.json({ success: true, message: 'Đã điều phối phiếu', ticket });
-    } catch (err) { next(err); }
-  },
-  async process(req, res, next) {
-    try {
-      const ticket = await ticketsService.process(req.params.id, req.body, req.user);
-      res.json({ success: true, message: 'Đã cập nhật xử lý', ticket });
-    } catch (err) { next(err); }
-  },
+
   async assign(req, res, next) {
     try {
       const ticket = await ticketsService.assign(req.params.id, req.body, req.user);

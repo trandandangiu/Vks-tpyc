@@ -61,7 +61,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim()) { toast.error('Vui lòng nhập tiêu đề sự cố!'); return; }
@@ -119,14 +119,14 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
           Tạo phiếu yêu cầu hỗ trợ kỹ thuật
         </h2>
         <p className="text-xs text-neutral-500 mt-1">
-          Điền đầy đủ thông tin để Bộ phận Chuyển đổi số xử lý kịp thời.
+          Điền đầy đủ thông tin để Bộ phận Công nghệ thông tin - chuyển đổi số tiếp nhận và xử lý nhanh chóng.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5 text-[#B71C1C]" /> Đơn vị (Tự động)
+            <Building2 className="w-3.5 h-3.5 text-[#B71C1C]" /> Đơn vị 
           </label>
           <input
             type="text"

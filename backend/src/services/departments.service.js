@@ -31,14 +31,18 @@ export const departmentsService = {
   },
 
   async create(data, currentUser) {
-    const { code, name } = data;
+    const { code, name, description } = data;   // ✅ thêm description
     if (!code || !name) throw { status: 400, message: 'Thiếu mã hoặc tên phòng' };
 
     const existing = await prisma.department.findUnique({ where: { code: code.trim().toUpperCase() } });
     if (existing) throw { status: 400, message: `Mã phòng "${code}" đã tồn tại` };
 
     const dept = await prisma.department.create({
-      data: { code: code.trim().toUpperCase(), name: name.trim(), description: description?.trim() || null },
+      data: {
+        code: code.trim().toUpperCase(),
+        name: name.trim(),
+        description: description?.trim() || null,   // ✅ giờ OK
+      },
     });
 
     await auditLogsService.create({
@@ -48,7 +52,7 @@ export const departmentsService = {
       action: 'CREATE_DEPARTMENT',
       entityType: 'DEPARTMENT',
       entityId: dept.id,
-      newValue: { code, name },
+      newValue: { code, name, description },
       level: 'INFO',
     });
 
@@ -61,6 +65,7 @@ export const departmentsService = {
 
     const updateData = {};
     if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.description !== undefined) updateData.description = data.description?.trim() || null;   // ✅ thêm
     if (data.active !== undefined) updateData.active = data.active;
 
     const dept = await prisma.department.update({ where: { id }, data: updateData });
