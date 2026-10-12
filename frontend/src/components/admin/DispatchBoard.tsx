@@ -196,7 +196,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                        Chọn KTV <span className="text-red-500">*</span>
+                        Kỹ thuật viên  <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={selectedTechId}

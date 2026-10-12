@@ -27,7 +27,6 @@ export const ticketsController = {
       res.json(await ticketsService.remove(req.params.id, req.user));
     } catch (err) { next(err); }
   },
-
   async assign(req, res, next) {
     try {
       const ticket = await ticketsService.assign(req.params.id, req.body, req.user);

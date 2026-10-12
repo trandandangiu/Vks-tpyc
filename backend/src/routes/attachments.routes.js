@@ -20,13 +20,10 @@ router.get(
   attachmentsController.list
 );
 
-// Download — cho phép dùng ?token= cho lightbox/tab mới
+
 router.get(
   '/attachments/:id/download',
-  (req, res, next) => {
-    if (req.query.token) return authenticate(req, res, next);
-    return authenticate(req, res, next);
-  },
+  authenticate, // <-- Chỉ cần gọi một lần
   attachmentsController.download
 );
 

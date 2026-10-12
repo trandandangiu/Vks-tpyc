@@ -70,7 +70,7 @@ export const CustomerDashboard: React.FC = () => {
               }`}
             >
               <PlusCircle className="w-4 h-4 text-[#FFD700]" />
-              <span>+ Tạo phiếu mới</span>
+              <span>Tạo phiếu mới</span>
             </button>
           </div>
 

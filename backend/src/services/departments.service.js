@@ -31,18 +31,14 @@ export const departmentsService = {
   },
 
   async create(data, currentUser) {
-    const { code, name, description } = data;   // ✅ thêm description
+    const { code, name, description } = data; // <-- Thêm description vào đây
     if (!code || !name) throw { status: 400, message: 'Thiếu mã hoặc tên phòng' };
 
     const existing = await prisma.department.findUnique({ where: { code: code.trim().toUpperCase() } });
     if (existing) throw { status: 400, message: `Mã phòng "${code}" đã tồn tại` };
 
     const dept = await prisma.department.create({
-      data: {
-        code: code.trim().toUpperCase(),
-        name: name.trim(),
-        description: description?.trim() || null,   // ✅ giờ OK
-      },
+      data: { code: code.trim().toUpperCase(), name: name.trim(), description: description?.trim() || null },
     });
 
     await auditLogsService.create({
