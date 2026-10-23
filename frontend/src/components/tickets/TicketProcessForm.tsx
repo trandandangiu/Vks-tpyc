@@ -9,9 +9,12 @@ import {
   X,
   Check,
   Save,
+  Printer,
 } from 'lucide-react';
 import { useToast } from '../common/Toast';
 import { apiClient } from '../../services/apiClient';
+import { TicketPrintModal } from './TicketPrintModal';
+import { useAuth } from '../../context/AuthContext';
 
 interface TicketProcessFormProps {
   ticket: Ticket;
@@ -50,6 +53,7 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
   onComplete,
 }) => {
   const toast = useToast();
+  const { user } = useAuth();
 
   // ─── State form ───
   const [status, setStatus] = useState<TicketStatus>(ticket.status);
@@ -57,12 +61,13 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
     toLocalDatetimeValue(ticket.scheduledAt)
   );
   const [technicalNotes, setTechnicalNotes] = useState<string>(
-    ticket.technicalNotes || ticket.processNote || ''
+    ticket.processNote || ticket.technicalNotes || ''
   );
   const [supplies, setSupplies] = useState<SupplyItem[]>(ticket.supplies || []);
   const [afterImages, setAfterImages] = useState<string[]>(
     ticket.afterImages || []
   );
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   // ─── State cho phần nhập vật tư tự do ───
   const [customSupplyName, setCustomSupplyName] = useState('');
@@ -76,7 +81,7 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
   useEffect(() => {
     setStatus(ticket.status);
     setScheduledAt(toLocalDatetimeValue(ticket.scheduledAt));
-    setTechnicalNotes(ticket.technicalNotes || ticket.processNote || '');
+    setTechnicalNotes(ticket.processNote || ticket.technicalNotes || '');
     setSupplies(ticket.supplies || []);
     setAfterImages(ticket.afterImages || []);
 
@@ -84,7 +89,7 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
     setCustomSupplyName('');
     setCustomSupplyQty(1);
     setCustomSupplyUnit('cái');
-  }, [ticket.id]);
+  }, [ticket.id, ticket.updatedAt]);
 
   // ─── Thêm vật tư ───
   const handleAddCustomSupply = () => {
@@ -145,11 +150,11 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
     for (const file of valid) {
       try {
         const res = await apiClient.uploadAttachment(ticket.id, file, 'AFTER');
-        // Nếu BE trả về URL hoặc attachment → thêm vào preview
-        const url =
-          res?.attachment?.url ||
-          res?.attachment?.filePath ||
-          URL.createObjectURL(file);
+        const url = res?.attachment?.id
+          ? apiClient.getAttachmentUrl(res.attachment.id, true)
+          : res?.attachment?.url ||
+            res?.attachment?.filePath ||
+            URL.createObjectURL(file);
 
         setAfterImages((prev) => [...prev, url]);
         toast.success(`Đã tải ảnh: ${file.name}`);
@@ -177,7 +182,16 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
     }
   };
 
-  const removeAfterImage = (index: number) => {
+  const removeAfterImage = async (index: number) => {
+    const targetUrl = afterImages[index];
+    const match = targetUrl?.match(/\/attachments\/([^/?]+)\/download/);
+    if (match?.[1]) {
+      try {
+        await apiClient.deleteAttachment(match[1]);
+      } catch (err) {
+        console.error('Lỗi xóa ảnh trên server:', err);
+      }
+    }
     setAfterImages((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -218,14 +232,20 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
   return (
     <div className="bg-white rounded-2xl p-5 border border-neutral-200 space-y-6">
       {/* Header */}
-      <div className="border-b border-neutral-100 pb-3 flex items-center justify-between">
+      <div className="border-b border-neutral-100 pb-3 flex items-center justify-between gap-2 flex-wrap">
         <h3 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
           <Wrench className="w-4 h-4 text-[#B71C1C]" />
           Tiến trình xử lý kỹ thuật
         </h3>
-        <span className="text-xs text-neutral-400">
-    
-        </span>
+        <button
+          type="button"
+          onClick={() => setIsPrintModalOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-[#B71C1C] border border-red-200 font-bold text-xs transition-colors cursor-pointer"
+          title="Xem trước và in phiếu kiểm tra kỹ thuật (A4)"
+        >
+          <Printer className="w-3.5 h-3.5" />
+          <span>In phiếu kiểm tra</span>
+        </button>
       </div>
 
       {/* Row 1: Hẹn giờ + Trạng thái */}
@@ -442,25 +462,47 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
       </div>
 
       {/* Buttons */}
-      <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-100">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-100">
         <button
           type="button"
-          onClick={handleSaveClick}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neutral-200 hover:bg-neutral-300 text-neutral-800 font-bold text-xs transition-colors cursor-pointer"
+          onClick={() => setIsPrintModalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-red-50 text-[#B71C1C] border border-[#B71C1C]/40 font-bold text-xs transition-colors cursor-pointer"
         >
-          <Save className="w-4 h-4 text-neutral-600" />
-          <span>LƯU TIẾN TRÌNH</span>
+          <Printer className="w-4 h-4" />
+          <span>IN PHIẾU KIỂM TRA</span>
         </button>
 
-        <button
-          type="button"
-          onClick={handleCompleteClick}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer"
-        >
-          <Check className="w-4 h-4 text-white" />
-          <span>HOÀN THÀNH PHIẾU</span>
-        </button>
+        <div className="flex items-center gap-3 ml-auto">
+          <button
+            type="button"
+            onClick={handleSaveClick}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neutral-200 hover:bg-neutral-300 text-neutral-800 font-bold text-xs transition-colors cursor-pointer"
+          >
+            <Save className="w-4 h-4 text-neutral-600" />
+            <span>LƯU TIẾN TRÌNH</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCompleteClick}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer"
+          >
+            <Check className="w-4 h-4 text-white" />
+            <span>HOÀN THÀNH PHIẾU</span>
+          </button>
+        </div>
       </div>
+
+      <TicketPrintModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        ticket={ticket}
+        draftNotes={technicalNotes}
+        draftSupplies={supplies}
+        draftScheduledAt={scheduledAt ? new Date(scheduledAt).toISOString() : ticket.scheduledAt}
+        draftStatus={status}
+        technicianName={user?.fullName}
+      />
     </div>
   );
 };

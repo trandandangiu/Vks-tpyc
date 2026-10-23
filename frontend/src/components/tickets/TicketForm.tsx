@@ -138,7 +138,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
         priority,
         creatorName: creatorName.trim() || user?.fullName || 'Khách hàng',
         creatorPhone: creatorPhone.trim(),
-        creatorPosition: creatorPosition.trim(),
+        creatorPosition: [creatorPosition.trim(), creatorTitle.trim()].filter(Boolean).join(' - '),
         supplies: [],
       });
 

@@ -47,7 +47,7 @@ export const attachmentsService = {
     const att = await prisma.ticketAttachment.findUnique({ where: { id: attachmentId } });
     if (!att) throw { status: 404, message: 'Không tìm thấy file' };
 
-    if (att.uploadedBy !== currentUser.id && currentUser.role !== 'ADMIN') {
+    if (att.uploadedBy !== currentUser.id && currentUser.role !== 'ADMIN' && currentUser.role !== 'TECHNICAL') {
       throw { status: 403, message: 'Không có quyền xóa file này' };
     }
 

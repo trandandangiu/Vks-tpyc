@@ -30,6 +30,7 @@ export interface SupplyItem {
   name: string;
   quantity: number;
   unit: string;
+  note?: string;
 }
 
 export interface RatingFeedback {
@@ -57,14 +58,19 @@ export interface Ticket {
   departmentName: string;
   assigneeId?: string;
   assigneeName?: string;
+  dispatcherId?: string;
+  dispatchedAt?: string;
   scheduledAt?: string;
   completedAt?: string;
-  processNote?: string;            // đổi từ technicalNotes
+  processNote?: string;
+  technicalNotes?: string;
   supplies: SupplyItem[];
-  attachments?: TicketAttachment[]; // thêm
+  attachments?: TicketAttachment[];
+  beforeImages?: string[];
+  afterImages?: string[];
   rating?: number;
-  feedback?: string;               // đổi từ object → string
-  ratedAt?: string;                // thêm
+  feedback?: string | RatingFeedback;
+  ratedAt?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -85,13 +91,17 @@ export interface TicketAttachment {
 export type AuditLogLevel = 'INFO' | 'WARNING' | 'SECURITY' | 'DANGER';
 export interface AuditLog {
   id: string;
-  createdAt: string;     // sửa từ timestamp
-  userName?: string;     // sửa từ user
+  createdAt?: string;
+  timestamp?: string;
+  userName?: string;
+  user?: string;
   userRole?: string;
   action: string;
-  entityType?: string;   // sửa từ entity
+  entityType?: string;
+  entity?: string;
   entityId?: string;
-  ipAddress?: string;    // sửa từ ip
+  ipAddress?: string;
+  ip?: string;
   level: AuditLogLevel;
 }
 

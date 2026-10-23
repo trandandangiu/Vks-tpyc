@@ -165,6 +165,34 @@ export const apiClient = {
   },
 
   // ---------- TICKETS ----------
+  normalizeTicket(t: Ticket): Ticket {
+    if (!t) return t;
+    const token = this.getToken();
+    const buildUrl = (attId: string) => {
+      const q = new URLSearchParams();
+      if (token) q.set('token', token);
+      q.set('inline', '1');
+      return `${API_BASE}/attachments/${attId}/download?${q.toString()}`;
+    };
+    const atts = Array.isArray(t.attachments) ? t.attachments : [];
+    const beforeFromAtts = atts
+      .filter((a) => a.stage === 'BEFORE' || !a.stage)
+      .map((a) => buildUrl(a.id));
+    const afterFromAtts = atts
+      .filter((a) => a.stage === 'AFTER')
+      .map((a) => buildUrl(a.id));
+
+    return {
+      ...t,
+      technicalNotes: t.processNote ?? t.technicalNotes ?? '',
+      processNote: t.processNote ?? t.technicalNotes ?? '',
+      beforeImages:
+        beforeFromAtts.length > 0 ? beforeFromAtts : t.beforeImages || [],
+      afterImages:
+        afterFromAtts.length > 0 ? afterFromAtts : t.afterImages || [],
+    };
+  },
+
   async getTickets(params?: {
     status?: string;
     priority?: string;
@@ -179,26 +207,30 @@ export const apiClient = {
     const data = await request<{ success: boolean; tickets: Ticket[] }>(
       `/tickets?${q.toString()}`
     );
-    return data.tickets || [];
+    return (data.tickets || []).map((t) => this.normalizeTicket(t));
   },
 
   async getTicketById(id: string) {
     const data = await request<{ success: boolean; ticket: Ticket }>(`/tickets/${id}`);
-    return data.ticket;
+    return this.normalizeTicket(data.ticket);
   },
 
   async createTicket(payload: Partial<Ticket>) {
-    return request<{ success: boolean; ticket: Ticket; message?: string }>('/tickets', {
+    const res = await request<{ success: boolean; ticket: Ticket; message?: string }>('/tickets', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+    if (res.ticket) res.ticket = this.normalizeTicket(res.ticket);
+    return res;
   },
 
   async updateTicket(ticketId: string, payload: Partial<Ticket>) {
-    return request<{ success: boolean; ticket: Ticket; message?: string }>(
+    const res = await request<{ success: boolean; ticket: Ticket; message?: string }>(
       `/tickets/${ticketId}`,
       { method: 'PUT', body: JSON.stringify(payload) }
     );
+    if (res.ticket) res.ticket = this.normalizeTicket(res.ticket);
+    return res;
   },
 
   async deleteTicket(ticketId: string) {
@@ -208,11 +240,13 @@ export const apiClient = {
     );
   },
 
-  async assignTicket(ticketId: string, assigneeId: string) {
-    return request<{ success: boolean; ticket: Ticket }>(
+  async assignTicket(ticketId: string, assigneeId: string, scheduledAt?: string) {
+    const res = await request<{ success: boolean; ticket: Ticket; message?: string }>(
       `/tickets/${ticketId}/assign`,
-      { method: 'POST', body: JSON.stringify({ assigneeId }) }
+      { method: 'POST', body: JSON.stringify({ assigneeId, scheduledAt }) }
     );
+    if (res.ticket) res.ticket = this.normalizeTicket(res.ticket);
+    return res;
   },
 
   async processTicket(
@@ -224,20 +258,24 @@ export const apiClient = {
       supplies?: SupplyItem[];
     }
   ) {
-    return request<{ success: boolean; ticket: Ticket }>(
+    const res = await request<{ success: boolean; ticket: Ticket; message?: string }>(
       `/tickets/${ticketId}/process`,
       { method: 'POST', body: JSON.stringify(payload) }
     );
+    if (res.ticket) res.ticket = this.normalizeTicket(res.ticket);
+    return res;
   },
 
   async evaluateTicket(
     ticketId: string,
     payload: { rating: number; feedback?: string }
   ) {
-    return request<{ success: boolean; ticket: Ticket }>(
+    const res = await request<{ success: boolean; ticket: Ticket; message?: string }>(
       `/tickets/${ticketId}/evaluate`,
       { method: 'POST', body: JSON.stringify(payload) }
     );
+    if (res.ticket) res.ticket = this.normalizeTicket(res.ticket);
+    return res;
   },
 
   async getTicketStats() {
@@ -266,6 +304,13 @@ export const apiClient = {
       `/tickets/${ticketId}/attachments`
     );
     return data.attachments || [];
+  },
+
+  async deleteAttachment(attachmentId: string) {
+    return request<{ success: boolean; message?: string }>(
+      `/attachments/${attachmentId}`,
+      { method: 'DELETE' }
+    );
   },
 
   getAttachmentUrl(attachmentId: string, inline = false) {

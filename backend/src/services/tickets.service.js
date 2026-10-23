@@ -5,13 +5,16 @@ import { notifyRealtime } from './notification.helper.js';
 async function generateCode() {
   const year = new Date().getFullYear();
   const prefix = `PYC-${year}-`;
-  const last = await prisma.ticket.findFirst({
+  const existingCodes = await prisma.ticket.findMany({
     where: { code: { startsWith: prefix } },
-    orderBy: { code: 'desc' },
     select: { code: true },
   });
-  const nextNum = last ? parseInt(last.code.split('-').pop()) + 1 : 1;
-  return `${prefix}${String(nextNum).padStart(3, '0')}`;
+  let maxNum = 0;
+  for (const item of existingCodes) {
+    const num = parseInt(item.code.split('-').pop(), 10);
+    if (!isNaN(num) && num > maxNum) maxNum = num;
+  }
+  return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
 }
 
 export const ticketsService = {
@@ -50,6 +53,7 @@ export const ticketsService = {
         orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
         include: {
           supplies: true,
+          attachments: { orderBy: { uploadedAt: 'asc' } },
           _count: { select: { attachments: true, replies: true } },
         },
       }),
@@ -79,24 +83,26 @@ export const ticketsService = {
   },
 
   async create(data, currentUser) {
-    if (currentUser.role !== 'CUSTOMER') {
-      throw { status: 403, message: 'Chỉ đơn vị (CUSTOMER) mới được tạo phiếu' };
-    }
-
     const {
       title, description, category, priority,
       creatorName, creatorPhone, creatorPosition,
+      departmentId: payloadDeptId,
       supplies = [],
     } = data;
 
     if (!title || !category) {
       throw { status: 400, message: 'Thiếu tiêu đề hoặc loại sự cố' };
     }
-    if (!currentUser.departmentId) {
-      throw { status: 400, message: 'Tài khoản chưa được gán đơn vị' };
+
+    const targetDeptId = payloadDeptId || currentUser.departmentId;
+    let dept = targetDeptId
+      ? await prisma.department.findUnique({ where: { id: targetDeptId } })
+      : await prisma.department.findFirst({ where: { active: true } });
+
+    if (!dept) {
+      throw { status: 400, message: 'Tài khoản chưa được gán đơn vị hợp lệ' };
     }
 
-    const dept = await prisma.department.findUnique({ where: { id: currentUser.departmentId } });
     const code = await generateCode();
 
     const ticket = await prisma.ticket.create({
@@ -111,8 +117,8 @@ export const ticketsService = {
         creatorName: creatorName || currentUser.fullName,
         creatorPhone: creatorPhone || currentUser.phone,
         creatorPosition: creatorPosition || currentUser.position,
-        departmentId: currentUser.departmentId,
-        departmentName: dept?.name || '',
+        departmentId: dept.id,
+        departmentName: dept.name || '',
         supplies: supplies.length > 0 ? {
           create: supplies.map((s) => ({
             name: s.name,
@@ -122,7 +128,10 @@ export const ticketsService = {
           })),
         } : undefined,
       },
-      include: { supplies: true },
+      include: {
+        supplies: true,
+        attachments: { orderBy: { uploadedAt: 'asc' } },
+      },
     });
 
     await auditLogsService.create({
@@ -150,7 +159,7 @@ export const ticketsService = {
     return ticket;
   },
 
-  async assign(id, { assigneeId }, currentUser) {
+  async assign(id, { assigneeId, scheduledAt }, currentUser) {
     if (currentUser.role !== 'ADMIN') {
       throw { status: 403, message: 'Chỉ ADMIN được điều phối phiếu' };
     }
@@ -162,20 +171,28 @@ export const ticketsService = {
     }
 
     const assignee = await prisma.user.findUnique({ where: { id: assigneeId } });
-    if (!assignee || assignee.role !== 'TECHNICAL' || !assignee.active) {
-      throw { status: 400, message: 'Người được gán phải là TECHNICAL đang hoạt động' };
+    if (!assignee || !assignee.active) {
+      throw { status: 400, message: 'Người được gán không tồn tại hoặc đang bị khóa' };
+    }
+
+    const updateData = {
+      assigneeId,
+      assigneeName: assignee.fullName,
+      dispatcherId: currentUser.id,
+      dispatchedAt: new Date(),
+      status: 'ASSIGNED',
+    };
+    if (scheduledAt !== undefined) {
+      updateData.scheduledAt = scheduledAt ? new Date(scheduledAt) : null;
     }
 
     const updated = await prisma.ticket.update({
       where: { id },
-      data: {
-        assigneeId,
-        assigneeName: assignee.fullName,
-        dispatcherId: currentUser.id,
-        dispatchedAt: new Date(),
-        status: 'ASSIGNED',
+      data: updateData,
+      include: {
+        supplies: true,
+        attachments: { orderBy: { uploadedAt: 'asc' } },
       },
-      include: { supplies: true },
     });
 
     await auditLogsService.create({
@@ -185,7 +202,7 @@ export const ticketsService = {
       action: 'ASSIGN_TICKET',
       entityType: 'TICKET',
       entityId: id,
-      newValue: { assigneeId, assigneeName: assignee.fullName },
+      newValue: { assigneeId, assigneeName: assignee.fullName, scheduledAt: updateData.scheduledAt },
       level: 'INFO',
     });
 
@@ -206,21 +223,23 @@ export const ticketsService = {
   },
 
   async process(id, data, currentUser) {
-    if (currentUser.role !== 'TECHNICAL') {
-      throw { status: 403, message: 'Chỉ TECHNICAL mới cập nhật xử lý' };
+    if (currentUser.role !== 'TECHNICAL' && currentUser.role !== 'ADMIN') {
+      throw { status: 403, message: 'Chỉ TECHNICAL hoặc ADMIN mới cập nhật xử lý' };
     }
 
     const ticket = await prisma.ticket.findUnique({ where: { id } });
     if (!ticket) throw { status: 404, message: 'Không tìm thấy phiếu' };
-    if (ticket.assigneeId !== currentUser.id) {
-      throw { status: 403, message: 'Bạn không được gán phiếu này' };
-    }
-    if (ticket.status === 'DONE' || ticket.status === 'CANCELLED') {
-      throw { status: 400, message: 'Phiếu đã kết thúc' };
+    if (ticket.status === 'CANCELLED' && currentUser.role !== 'ADMIN') {
+      throw { status: 400, message: 'Phiếu đã hủy không thể xử lý' };
     }
 
     const { status, scheduledAt, processNote, supplies } = data;
     const updateData = {};
+
+    if (!ticket.assigneeId && currentUser.role === 'TECHNICAL') {
+      updateData.assigneeId = currentUser.id;
+      updateData.assigneeName = currentUser.fullName;
+    }
 
     if (status && ['ASSIGNED', 'PROCESSING', 'WAITING_SUPPLY', 'DONE'].includes(status)) {
       updateData.status = status;
@@ -231,6 +250,8 @@ export const ticketsService = {
     if (processNote !== undefined) updateData.processNote = processNote;
     if (status === 'DONE' && !ticket.completedAt) {
       updateData.completedAt = new Date();
+    } else if (status && status !== 'DONE' && ticket.completedAt) {
+      updateData.completedAt = null;
     }
 
     if (Array.isArray(supplies)) {
@@ -251,7 +272,10 @@ export const ticketsService = {
     const updated = await prisma.ticket.update({
       where: { id },
       data: updateData,
-      include: { supplies: true },
+      include: {
+        supplies: true,
+        attachments: { orderBy: { uploadedAt: 'asc' } },
+      },
     });
 
     await auditLogsService.create({
@@ -287,20 +311,17 @@ export const ticketsService = {
   },
 
   async evaluate(id, { rating, feedback }, currentUser) {
-    if (currentUser.role !== 'CUSTOMER') {
-      throw { status: 403, message: 'Chỉ đơn vị tạo phiếu mới được đánh giá' };
+    if (currentUser.role !== 'CUSTOMER' && currentUser.role !== 'ADMIN') {
+      throw { status: 403, message: 'Chỉ đơn vị tạo phiếu hoặc quản trị viên mới được đánh giá' };
     }
 
     const ticket = await prisma.ticket.findUnique({ where: { id } });
     if (!ticket) throw { status: 404, message: 'Không tìm thấy phiếu' };
-    if (ticket.creatorId !== currentUser.id) {
+    if (currentUser.role === 'CUSTOMER' && ticket.creatorId !== currentUser.id) {
       throw { status: 403, message: 'Bạn không phải chủ phiếu này' };
     }
     if (ticket.status !== 'DONE') {
       throw { status: 400, message: 'Chỉ đánh giá được phiếu đã hoàn thành' };
-    }
-    if (ticket.rating) {
-      throw { status: 400, message: 'Phiếu đã được đánh giá' };
     }
     if (!rating || rating < 1 || rating > 5) {
       throw { status: 400, message: 'Đánh giá phải từ 1 đến 5 sao' };
@@ -309,6 +330,10 @@ export const ticketsService = {
     const updated = await prisma.ticket.update({
       where: { id },
       data: { rating, feedback: feedback?.trim() || null, ratedAt: new Date() },
+      include: {
+        supplies: true,
+        attachments: { orderBy: { uploadedAt: 'asc' } },
+      },
     });
 
     await auditLogsService.create({
@@ -431,7 +456,10 @@ export const ticketsService = {
     const updated = await prisma.ticket.update({
       where: { id },
       data: updateData,
-      include: { supplies: true },
+      include: {
+        supplies: true,
+        attachments: { orderBy: { uploadedAt: 'asc' } },
+      },
     });
 
     await auditLogsService.create({

@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════╗
 ║  DỰ ÁN: VKS-QLCV-v3 — FE
-║  Xuất ngày: 2026-10-11 12:50:31
+║  Xuất ngày: 2026-10-12 17:09:50
 ╚══════════════════════════════════════════════════════════╝
 
 ════════════════════════════════════════════════════════════
@@ -39,7 +39,8 @@
 │   │       ├── TicketEditModal.tsx
 │   │       ├── TicketForm.tsx
 │   │       ├── TicketList.tsx
-│   │       └── TicketProcessForm.tsx
+│   │       ├── TicketProcessForm.tsx
+│   │       └── TicketWanForm.tsx
 │   ├── context/
 │   │   └── AuthContext.tsx
 │   ├── index.css
@@ -49,6 +50,8 @@
 │   │   ├── CustomerDashboard.tsx
 │   │   ├── Login.tsx
 │   │   └── TechnicalDashboard.tsx
+│   ├── public/
+│   │   └── icon.ico
 │   ├── services/
 │   │   ├── apiClient.ts
 │   │   ├── mockData.ts
@@ -715,7 +718,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs }) => {
         <div>
           <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-[#B71C1C]" />
-            Nhật ký kiểm toán hệ thống (Audit Logs)
+            Nhật ký hệ thống
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
             Lưu vết tự động tất cả các thao tác nghiệp vụ, điều phối, thay đổi trạng thái và an ninh.
@@ -905,10 +908,10 @@ export const DeptManager: React.FC<DeptManagerProps> = ({ departments, onRefresh
         <div>
           <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
             <Building className="w-5 h-5 text-[#B71C1C]" />
-            Quản lý Đơn vị / Phòng ban
+            Quản lý đơn vị
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Danh mục các phòng ban, đơn vị trực thuộc có phát sinh yêu cầu kỹ thuật.
+            Danh mục các phòng ban, đơn vị yêu cầu kỹ thuật.
           </p>
         </div>
 
@@ -928,8 +931,8 @@ export const DeptManager: React.FC<DeptManagerProps> = ({ departments, onRefresh
             <thead>
               <tr className="bg-neutral-50/80 border-b border-neutral-200 text-neutral-500 font-semibold uppercase tracking-wider">
                 <th className="py-3 px-4 w-32">Mã đơn vị</th>
-                <th className="py-3 px-4">Tên đơn vị / Phòng ban</th>
-                <th className="py-3 px-4">Mô tả chức năng</th>
+                <th className="py-3 px-4">Đơn vị</th>
+                <th className="py-3 px-4">Mô tả</th>
                 <th className="py-3 px-4 text-center w-28">Thao tác</th>
               </tr>
             </thead>
@@ -1133,9 +1136,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
             <GitPullRequest className="w-5 h-5 text-[#B71C1C]" />
             Bảng điều phối kỹ thuật
           </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            Tiếp nhận phiếu mới và phân công cho kỹ thuật viên phụ trách.
-          </p>
+
         </div>
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-50 text-[#B71C1C] border border-red-200 text-xs font-bold">
           <span>Đang chờ phân công:</span>
@@ -1150,10 +1151,8 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
           <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-8 h-8" />
           </div>
-          <h3 className="font-bold text-neutral-800 text-base">Không còn phiếu chờ điều phối</h3>
-          <p className="text-xs text-neutral-500 mt-1">
-            Tất cả phiếu đã được phân công xử lý.
-          </p>
+          <h3 className="font-bold text-neutral-800 text-base"></h3>
+
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -1252,7 +1251,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                        Chọn KTV <span className="text-red-500">*</span>
+                        Kỹ thuật viên  <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={selectedTechId}
@@ -1470,7 +1469,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
             Quản lý tài khoản cán bộ
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Danh sách cán bộ sử dụng hệ thống và thông tin liên hệ.
+            Danh sách đơn vị và thông tin liên hệ.
           </p>
         </div>
 
@@ -1509,7 +1508,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
                       u.role === 'TECHNICAL' ? 'bg-blue-100 text-blue-800' :
                       'bg-emerald-100 text-emerald-800'
                     }`}>
-                      {u.role || 'CUSTOMER'}
+                      {u.role || 'Đơn vị'}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-neutral-600 max-w-[200px] truncate">
@@ -1610,7 +1609,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
               </label>
               <input
                 type="text"
-                required
+               
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none"
@@ -1627,7 +1626,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
                 className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none cursor-pointer"
               >
                 <option value="ADMIN">Quản trị viên</option>
-                <option value="CUSTOMER">Khách hàng (Đơn vị)</option>
+                <option value="CUSTOMER">Đơn vị tạo phiếu</option>
                 <option value="TECHNICAL">Kỹ thuật viên</option>
               </select>
             </div>
@@ -1696,10 +1695,11 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
 FILE: frontend/src/components/common/Header.tsx
 ════════════════════════════════════════════════════════════
 
+// src/components/common/Header.tsx
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, User as UserIcon, Shield, Laptop, Building2 } from 'lucide-react';
-import { VksLogo } from './VksLogo';
+import { LogOut } from 'lucide-react';
+import logoUrl from '../../public/icon.ico';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -1707,47 +1707,27 @@ interface HeaderProps {
   rightAction?: React.ReactNode;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton, rightAction }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onMenuToggle,
+  showMenuButton,
+  rightAction,
+}) => {
   const { user, logout } = useAuth();
 
-  const roleBadge = () => {
-    switch (user?.role) {
-      case 'ADMIN':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-[#B71C1C] border border-red-200">
-            <Shield className="w-3 h-3" />
-            QUẢN TRỊ VIÊN
-          </span>
-        );
-      case 'TECHNICAL':
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
-            <Laptop className="w-3 h-3" />
-            KỸ THUẬT VIÊN
-          </span>
-        );
-      case 'CUSTOMER':
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <Building2 className="w-3 h-3" />
-            KHÁCH HÀNG
-          </span>
-        );
-    }
-  };
-
   return (
-    <header className="bg-white border-b border-neutral-200/90 sticky top-0 z-30 shadow-xs">
+    <header
+      className="sticky top-0 z-30 shadow-md border-b-2 text-white"
+      style={{ backgroundColor: '#B71C1C', borderColor: '#7F0E0E' }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Left Brand */}
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between h-[72px] gap-3">
+          {/* ═══ LEFT: Menu + Logo + Tiêu đề ═══ */}
+          <div className="flex items-center gap-3 min-w-0">
             {showMenuButton && (
               <button
                 type="button"
                 onClick={onMenuToggle}
-                className="md:hidden p-2 rounded-xl text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 focus:outline-none"
+                className="md:hidden p-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 focus:outline-none transition-colors shrink-0"
                 aria-label="Toggle menu"
               >
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1756,47 +1736,46 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton, ri
               </button>
             )}
 
-            <div className="flex items-center gap-3">
-              {/* Official VKS Logo */}
-              <div className="shrink-0 transition-transform hover:scale-105 duration-200">
-                <VksLogo className="w-11 h-11 drop-shadow-md" />
+            {/* Logo */}
+            <div className="shrink-0 group">
+              <img
+                src={logoUrl}
+                alt="Logo VKSND"
+                className="w-12 h-12 sm:w-14 sm:h-14 object-contain drop-shadow-md group-hover:scale-105 transition-transform"
+                draggable={false}
+              />
+            </div>
+
+            {/* Tên cơ quan + Tiêu đề */}
+            <div className="min-w-0 space-y-0.5">
+              {/* Dòng 1: Tên cơ quan — CHỮ VÀNG GOLD */}
+              <div className="text-[9px] sm:text-[11px] font-bold tracking-wider uppercase truncate text-[#FFD700]">
+                VIỆN KIỂM SÁT NHÂN DÂN THÀNH PHỐ HỒ CHÍ MINH
               </div>
 
-              <div>
-                <h1 className="text-sm sm:text-base font-extrabold text-[#B71C1C] tracking-tight leading-snug line-clamp-1">
-                  HỆ THỐNG PHIẾU YÊU CẦU KỸ THUẬT
-                </h1>
-                <p className="text-[11px] sm:text-xs font-semibold text-neutral-500 uppercase tracking-wider">
-                  Bộ phận Chuyển đổi số
-                </p>
-              </div>
+              {/* Dòng 2: Tiêu đề — CHỮ TRẮNG ĐẬM */}
+              <h1 className="text-xs sm:text-base lg:text-lg font-black tracking-wide uppercase text-white leading-tight truncate">
+                HỆ THỐNG PHIẾU YÊU CẦU KỸ THUẬT
+              </h1>
             </div>
           </div>
 
-          {/* Right Info & Actions */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          {/* ═══ RIGHT: Action + User ═══ */}
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
             {rightAction}
 
             {user && (
-              <div className="flex items-center gap-3 pl-2 sm:pl-4 sm:border-l border-neutral-200">
-                <div className="hidden sm:flex flex-col items-end text-right">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-neutral-800">{user.fullName}</span>
-                    {roleBadge()}
-                  </div>
-                  <span className="text-xs text-neutral-500 truncate max-w-[200px]">
-                    {user.departmentName || user.email}
+              <div className="flex items-center gap-3 pl-2 sm:pl-4 sm:border-l sm:border-white/20">
+                <div className="hidden sm:flex flex-col items-end text-right min-w-0">
+                  <span className="text-sm font-bold text-white truncate max-w-[200px]">
+                    {user.fullName}
                   </span>
-                </div>
-
-                <div className="w-9 h-9 rounded-xl bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-700 font-bold text-sm shrink-0 shadow-2xs">
-                  {user.fullName ? user.fullName.charAt(user.fullName.lastIndexOf(' ') + 1) || user.fullName.charAt(0) : <UserIcon className="w-4 h-4" />}
                 </div>
 
                 <button
                   type="button"
                   onClick={logout}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-neutral-700 hover:text-[#B71C1C] hover:bg-red-50 border border-neutral-200 hover:border-red-200 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/25 transition-all cursor-pointer backdrop-blur-sm"
                   title="Đăng xuất khỏi hệ thống"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -1810,7 +1789,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuToggle, showMenuButton, ri
     </header>
   );
 };
-
 
 
 ════════════════════════════════════════════════════════════
@@ -2109,11 +2087,24 @@ FILE: frontend/src/components/common/Sidebar.tsx
 ════════════════════════════════════════════════════════════
 
 import React from 'react';
-import { LayoutDashboard, Ticket, GitPullRequest, Users, Building, ShieldAlert, LogOut, X } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { VksLogo } from './VksLogo';
+import {
+  LayoutDashboard,
+  Ticket,
+  GitPullRequest,
+  Users,
+  Building,
+  ShieldAlert,
+  X,
+} from 'lucide-react';
+import logoUrl from '../../public/icon.ico';
 
-export type AdminTab = 'dashboard' | 'all-tickets' | 'dispatch' | 'users' | 'departments' | 'audit-logs';
+export type AdminTab =
+  | 'dashboard'
+  | 'all-tickets'
+  | 'dispatch'
+  | 'users'
+  | 'departments'
+  | 'audit-logs';
 
 interface SidebarProps {
   activeTab: AdminTab;
@@ -2130,12 +2121,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
 }) => {
-  const { logout, user } = useAuth();
-
   const navItems = [
     {
       id: 'dashboard' as AdminTab,
-      label: 'Tổng quan (Dashboard)',
+      label: 'Tổng quan',
       icon: LayoutDashboard,
     },
     {
@@ -2148,7 +2137,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Điều phối kỹ thuật',
       icon: GitPullRequest,
       badge: newTicketsCount > 0 ? newTicketsCount : null,
-      badgeColor: 'bg-[#B71C1C] text-white',
     },
     {
       id: 'users' as AdminTab,
@@ -2162,7 +2150,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'audit-logs' as AdminTab,
-      label: 'Nhật ký hệ thống (Audit)',
+      label: 'Nhật ký hệ thống',
       icon: ShieldAlert,
     },
   ];
@@ -2177,36 +2165,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile Backdrop */}
       {isOpenMobile && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden backdrop-blur-xs transition-opacity"
+          className="fixed inset-0 z-40 bg-black/50 md:hidden backdrop-blur-sm transition-opacity"
           onClick={onCloseMobile}
         />
       )}
 
-      {/* Sidebar element */}
+      {/* Sidebar */}
       <aside
-        className={`fixed md:sticky top-0 md:top-16 z-50 md:z-20 h-[100dvh] md:h-[calc(100vh-4rem)] w-[260px] bg-white border-r border-neutral-200 flex flex-col justify-between shrink-0 transition-transform duration-300 ease-in-out shadow-sm md:shadow-none ${
+        className={`fixed md:sticky top-0 md:top-[72px] z-50 md:z-20 h-[100dvh] md:h-[calc(100vh-72px)] w-[260px] bg-white border-r border-neutral-200 flex flex-col shrink-0 transition-transform duration-300 ease-in-out shadow-sm md:shadow-none ${
           isOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        {/* Mobile Header */}
-        <div className="md:hidden flex items-center justify-between p-4 border-b border-neutral-200">
-          <div className="flex items-center gap-2.5">
-            <VksLogo className="w-8 h-8 drop-shadow-sm" />
-            <span className="font-bold text-sm text-[#B71C1C]">QUẢN TRỊ VIÊN</span>
+        {/* Header trên sidebar */}
+        <div className="flex items-center gap-2.5 px-4 h-[72px] border-b border-neutral-200 shrink-0">
+          <img
+            src={logoUrl}
+            alt="Logo"
+            className="w-10 h-10 object-contain shrink-0"
+            draggable={false}
+          />
+          <div className="min-w-0">
+            <p className="text-[13px] font-extrabold text-[#B71C1C] leading-tight truncate">
+          PHIẾU YÊU CẦU KỸ THUẬT
+            </p>
+            <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider truncate">
+              Quản trị hệ thống
+            </p>
           </div>
+
+          {/* Nút đóng trên mobile */}
           <button
             type="button"
             onClick={onCloseMobile}
-            className="p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100"
+            className="md:hidden ml-auto p-1.5 rounded-lg text-neutral-500 hover:bg-neutral-100"
+            aria-label="Đóng menu"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation list */}
-        <div className="p-3.5 space-y-1.5 flex-1 overflow-y-auto">
-          <div className="px-3 py-2 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
-            Menu Quản trị
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+          <div className="px-3 mb-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+            Menu chính
           </div>
 
           {navItems.map((item) => {
@@ -2218,21 +2219,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => handleSelect(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 cursor-pointer ${
+                className={`group w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-150 cursor-pointer relative ${
                   isActive
-                    ? 'bg-[#B71C1C] text-white shadow-sm font-semibold'
-                    : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900'
+                    ? 'bg-red-50 text-[#B71C1C] font-semibold'
+                    : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 font-medium'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#FFD700]' : 'text-neutral-500'}`} />
-                  <span>{item.label}</span>
+                {/* Vạch đỏ bên trái khi active */}
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#B71C1C]" />
+                )}
+
+                <div className="flex items-center gap-3 min-w-0">
+                  <Icon
+                    className={`w-[18px] h-[18px] shrink-0 transition-colors ${
+                      isActive
+                        ? 'text-[#B71C1C]'
+                        : 'text-neutral-500 group-hover:text-neutral-700'
+                    }`}
+                  />
+                  <span className="truncate">{item.label}</span>
                 </div>
 
                 {item.badge !== undefined && item.badge !== null && (
                   <span
-                    className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-                      isActive ? 'bg-[#FFD700] text-[#B71C1C]' : 'bg-[#B71C1C] text-white'
+                    className={`shrink-0 min-w-[22px] h-[22px] px-1.5 flex items-center justify-center text-[11px] font-bold rounded-full ${
+                      isActive
+                        ? 'bg-[#B71C1C] text-white'
+                        : 'bg-red-100 text-[#B71C1C]'
                     }`}
                   >
                     {item.badge}
@@ -2241,28 +2255,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             );
           })}
-        </div>
+        </nav>
 
-        {/* Bottom User info & Logout */}
-        <div className="p-3.5 border-t border-neutral-200 bg-neutral-50/50">
-          <div className="px-2 py-2 mb-2">
-            <p className="text-xs font-bold text-neutral-800 truncate">{user?.fullName}</p>
-            <p className="text-[11px] text-neutral-500 font-mono">@{user?.username}</p>
-          </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-sm font-medium text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
-          >
-            <LogOut className="w-4 h-4 text-rose-600" />
-            <span>Đăng xuất</span>
-          </button>
+        {/* Chân sidebar — chỉ hiện dòng version mảnh */}
+        <div className="px-4 py-3 border-t border-neutral-100">
+          <p className="text-[10px] text-neutral-400 text-center">
+            v1.0.0 • © 2026
+          </p>
         </div>
       </aside>
     </>
   );
 };
-
 
 
 ════════════════════════════════════════════════════════════
@@ -3781,7 +3785,7 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
         <div className="bg-emerald-50/70 rounded-2xl p-4 border border-emerald-200 space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> Đánh giá từ khách hàng
+              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> Đánh giá từ đơn vị
             </h4>
             <span className="text-xs text-emerald-700">
               {formatDate(ticket.feedback.submittedAt)}
@@ -4100,22 +4104,66 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../services/apiClient';
 import { useToast } from '../common/Toast';
-import { TicketPriority, CREATOR_POSITIONS, INCIDENT_CATEGORIES } from '../../types';
-import { Send, Upload, X, Building2, User, Phone, Briefcase } from 'lucide-react';
+import { TicketPriority, INCIDENT_CATEGORIES } from '../../types';
+import {
+  Send,
+  Upload,
+  X,
+  Building2,
+  User,
+  Phone,
+  Briefcase,
+  Globe,
+  Network,
+  CheckCircle2,
+} from 'lucide-react';
+import { TicketWanForm } from './TicketWanForm';
 
 interface TicketFormProps {
   onSuccess: () => void;
 }
 
+type NetworkType = 'WAN' | 'LAN';
+
+const FORM_WRAPPER =
+  'bg-white rounded-2xl p-6 sm:p-8 border border-neutral-200/90 shadow-sm max-w-4xl mx-auto space-y-6';
+
+/**
+ * Danh sách tiêu đề gợi ý — "custom sort" ra để tick chọn.
+ * Admin có thể tự nhập tay, user thường chỉ được tick chọn trong list này.
+ */
+const TITLE_PRESETS: string[] = [
+  'Không kết nối được mạng LAN',
+  'Máy in không hoạt động',
+  'Máy tính khởi động chậm / treo',
+  'Không truy cập được Internet',
+  'Lỗi phần mềm nghiệp vụ',
+  'Email không gửi / nhận được',
+  'Ổ cứng đầy / báo lỗi bộ nhớ',
+  'Thiết bị ngoại vi không nhận',
+  'Khác (mô tả chi tiết bên dưới)',
+];
+
 export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
   const { user } = useAuth();
   const toast = useToast();
 
+  // ====== PHÂN QUYỀN ADMIN ======
+  // Tùy hệ thống của bạn, có thể là user?.role === 'ADMIN' | 'admin' | user?.isAdmin
+  const isAdmin =
+    user?.role === 'ADMIN' ||
+    (user as any)?.isAdmin === true ||
+    (user as any)?.roleName === 'Admin';
+
+  const [networkType, setNetworkType] = useState<NetworkType>('WAN');
+
+  // ====== STATE CHUNG CHO FORM LAN ======
+  const [ticketTitle, setTicketTitle] = useState('');      // tiêu đề sự cố (admin nhập / user tick)
   const [creatorName, setCreatorName] = useState(user?.fullName || '');
   const [creatorPhone, setCreatorPhone] = useState(user?.phone || '');
-  const [creatorPosition, setCreatorPosition] = useState(CREATOR_POSITIONS[1]);
+  const [creatorPosition, setCreatorPosition] = useState('');
+  const [creatorTitle, setCreatorTitle] = useState('');
   const [category, setCategory] = useState(INCIDENT_CATEGORIES[0]);
-  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TicketPriority>('NORMAL');
   const [images, setImages] = useState<File[]>([]);
@@ -4123,13 +4171,16 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // ====== XỬ LÝ ẢNH ======
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     processFiles(Array.from(e.target.files));
   };
 
   const processFiles = (files: File[]) => {
-    const validFiles = files.filter((f) => f.type.startsWith('image/')).slice(0, 4 - images.length);
+    const validFiles = files
+      .filter((f) => f.type.startsWith('image/'))
+      .slice(0, 4 - images.length);
     if (validFiles.length === 0) {
       toast.warning('Chỉ chấp nhận tệp hình ảnh (tối đa 4 ảnh)');
       return;
@@ -4146,7 +4197,10 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
     });
   };
 
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
   const handleDragLeave = () => setIsDragging(false);
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -4159,24 +4213,34 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // ====== SUBMIT FORM LAN ======
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim()) { toast.error('Vui lòng nhập tiêu đề sự cố!'); return; }
-    if (!description.trim()) { toast.error('Vui lòng nhập mô tả sự cố!'); return; }
-    if (!creatorPhone.trim()) { toast.error('Vui lòng nhập SĐT liên hệ!'); return; }
+    if (!ticketTitle.trim()) {
+      toast.error('Vui lòng chọn hoặc nhập tiêu đề sự cố!');
+      return;
+    }
+    if (!description.trim()) {
+      toast.error('Vui lòng nhập mô tả sự cố!');
+      return;
+    }
+    if (!creatorPosition.trim()) {
+      toast.error('Vui lòng nhập vị trí công tác!');
+      return;
+    }
 
     setIsSubmitting(true);
-
     try {
       const res = await apiClient.createTicket({
-        title: title.trim(),
+        // Nếu admin nhập tự do → dùng luôn; nếu không → prefix [INTERNET]
+        title: isAdmin ? ticketTitle.trim() : `[INTERNET] ${ticketTitle.trim()}`,
         description: description.trim(),
         category,
         priority,
         creatorName: creatorName.trim() || user?.fullName || 'Khách hàng',
         creatorPhone: creatorPhone.trim(),
-        creatorPosition,
+        creatorPosition: creatorPosition.trim(),
         supplies: [],
       });
 
@@ -4186,8 +4250,6 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
       }
 
       const newTicketId = res.ticket.id;
-
-      // Upload ảnh nếu có
       for (const file of images) {
         try {
           await apiClient.uploadAttachment(newTicketId, file, 'BEFORE');
@@ -4197,7 +4259,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
       }
 
       toast.success(`Gửi phiếu [${res.ticket.code}] thành công!`);
-      setTitle('');
+      setTicketTitle('');
       setDescription('');
       setImages([]);
       setPreviewUrls([]);
@@ -4209,199 +4271,312 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
     }
   };
 
+  const priorityOptions = [
+    { id: 'LOW' as TicketPriority, label: 'Thấp', bg: 'peer-checked:bg-emerald-500' },
+    { id: 'NORMAL' as TicketPriority, label: 'Bình thường', bg: 'peer-checked:bg-blue-600' },
+    { id: 'HIGH' as TicketPriority, label: 'Cao', bg: 'peer-checked:bg-amber-500' },
+    { id: 'URGENT' as TicketPriority, label: 'Khẩn cấp', bg: 'peer-checked:bg-[#B71C1C]' },
+  ];
+
+  // ====== RENDER ======
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 sm:p-8 border border-neutral-200/90 shadow-sm max-w-4xl mx-auto space-y-6">
-      <div className="border-b border-neutral-100 pb-4">
-        <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#B71C1C]" />
-          Tạo phiếu yêu cầu hỗ trợ kỹ thuật
-        </h2>
-        <p className="text-xs text-neutral-500 mt-1">
-          Điền đầy đủ thông tin để Bộ phận Chuyển đổi số xử lý kịp thời.
-        </p>
-      </div>
+    <div className={FORM_WRAPPER}>
+      <NetworkTypeSelector networkType={networkType} onChange={setNetworkType} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5 text-[#B71C1C]" /> Đơn vị (Tự động)
-          </label>
-          <input
-            type="text"
-            readOnly
-            value={user?.departmentName || user?.department?.name || 'Chưa gán đơn vị'}
-            className="w-full px-3.5 py-2.5 bg-neutral-100 border border-neutral-200 rounded-xl text-neutral-600 text-sm font-medium cursor-not-allowed"
-          />
-        </div>
+      {networkType === 'WAN' ? (
+        <TicketWanForm onSuccess={onSuccess} />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="border-b border-neutral-100 pb-4">
+            <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#B71C1C]" />
+              Tạo phiếu yêu cầu hỗ trợ kỹ thuật
+            </h2>
+            <p className="text-xs text-neutral-500 mt-1">
+              Điền đầy đủ thông tin để Bộ phận "Công nghệ thông tin - chuyển đổi số" tiếp nhận và xử lý nhanh chóng.
+            </p>
+          </div>
 
-        <div>
-          <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-            <User className="w-3.5 h-3.5 text-neutral-500" /> Tên người yêu cầu <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            required
-            value={creatorName}
-            onChange={(e) => setCreatorName(e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-neutral-800 text-sm font-medium"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-            <Briefcase className="w-3.5 h-3.5 text-neutral-500" /> Vị trí công tác
-          </label>
-          <select
-            value={creatorPosition}
-            onChange={(e) => setCreatorPosition(e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium cursor-pointer"
-          >
-            {CREATOR_POSITIONS.map((pos) => (
-              <option key={pos} value={pos}>{pos}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-            <Phone className="w-3.5 h-3.5 text-neutral-500" /> SĐT liên hệ <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="tel"
-            required
-            value={creatorPhone}
-            onChange={(e) => setCreatorPhone(e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
-            Loại sự cố <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium cursor-pointer"
-          >
-            {INCIDENT_CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
-            Mức độ ưu tiên <span className="text-red-500">*</span>
-          </label>
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { id: 'LOW' as TicketPriority, label: 'Thấp', bg: 'peer-checked:bg-emerald-500' },
-              { id: 'NORMAL' as TicketPriority, label: 'Bình thường', bg: 'peer-checked:bg-blue-600' },
-              { id: 'HIGH' as TicketPriority, label: 'Cao', bg: 'peer-checked:bg-amber-500' },
-              { id: 'URGENT' as TicketPriority, label: 'Khẩn cấp', bg: 'peer-checked:bg-[#B71C1C]' },
-            ].map((p) => (
-              <label key={p.id} className="relative cursor-pointer">
-                <input
-                  type="radio"
-                  name="priority"
-                  value={p.id}
-                  checked={priority === p.id}
-                  onChange={() => setPriority(p.id)}
-                  className="sr-only peer"
-                />
-                <div className={`text-center py-2 px-1 text-xs font-semibold rounded-xl border border-neutral-200 peer-checked:text-white peer-checked:border-transparent transition-all ${p.bg}`}>
-                  {p.label}
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-[#B71C1C]" /> Đơn vị
               </label>
-            ))}
+              <input
+                type="text"
+                readOnly
+                value={user?.departmentName || user?.department?.name || 'Chưa gán đơn vị'}
+                className="w-full px-3.5 py-2.5 bg-neutral-100 border border-neutral-200 rounded-xl text-neutral-600 text-sm font-medium cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-neutral-500" /> Người tạo phiếu{' '}
+                <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={creatorName}
+                onChange={(e) => setCreatorName(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-neutral-800 text-sm font-medium"
+              />
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div>
-        <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
-          Tiêu đề sự cố <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          required
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Ví dụ: Máy in Canon phòng 1 không kết nối mạng LAN..."
-          className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
-        />
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-neutral-500" /> Vị trí{' '}
+                <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={creatorPosition}
+                onChange={(e) => setCreatorPosition(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
+              />
+            </div>
 
-      <div>
-        <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
-          Mô tả chi tiết <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          required
-          rows={4}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Mô tả cụ thể triệu chứng, vị trí máy tính/thiết bị, thông báo lỗi..."
-          className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm"
-        />
-      </div>
+            <div>
+              <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-neutral-500" /> Chức vụ
+              </label>
+              <input
+                type="text"
+                value={creatorTitle}
+                onChange={(e) => setCreatorTitle(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
+              />
+            </div>
+          </div>
 
-      <div>
-        <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
-          Đính kèm ảnh hiện trạng (Tối đa 4 ảnh)
-        </label>
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-2xl p-5 text-center transition-colors ${
-            isDragging ? 'border-[#B71C1C] bg-red-50/50' : 'border-neutral-300 hover:border-[#B71C1C]/50 bg-neutral-50/50'
-          }`}
-        >
-          <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-          <p className="text-xs text-neutral-600 font-medium">
-            Kéo thả ảnh hoặc{' '}
-            <label className="text-[#B71C1C] font-bold hover:underline cursor-pointer">
-              chọn từ máy
-              <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-neutral-500" /> SĐT liên hệ
+              </label>
+              <input
+                type="tel"
+                value={creatorPhone}
+                onChange={(e) => setCreatorPhone(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
+              />
+            </div>
+          </div>
+
+          {/* ============ TIÊU ĐỀ SỰ CỐ ============ */}
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+              Tiêu đề sự cố <span className="text-red-500">*</span>
+              {isAdmin && (
+                <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-amber-100 text-amber-700 font-bold normal-case">
+                  Admin
+                </span>
+              )}
             </label>
-          </p>
-        </div>
 
-        {previewUrls.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-            {previewUrls.map((url, idx) => (
-              <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border border-neutral-200 group bg-neutral-100">
-                <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => removeImage(idx)}
-                  className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-600 text-white rounded-lg cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+            {isAdmin ? (
+              // ADMIN: nhập tự do
+              <input
+                type="text"
+                required
+                value={ticketTitle}
+                onChange={(e) => setTicketTitle(e.target.value)}
+                placeholder="Nhập tiêu đề sự cố..."
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
+              />
+            ) : (
+              // USER: tick chọn từ danh sách gợi ý (custom sort)
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {TITLE_PRESETS.map((t) => {
+                  const active = ticketTitle === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTicketTitle(t)}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left text-sm transition-all cursor-pointer ${
+                        active
+                          ? 'border-[#B71C1C] bg-red-50/60 text-[#B71C1C] font-semibold'
+                          : 'border-neutral-200 bg-white text-neutral-700 hover:border-[#B71C1C]/40'
+                      }`}
+                    >
+                      <CheckCircle2
+                        className={`w-4 h-4 flex-shrink-0 ${
+                          active ? 'text-[#B71C1C]' : 'text-neutral-300'
+                        }`}
+                      />
+                      <span className="leading-tight">{t}</span>
+                    </button>
+                  );
+                })}
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="pt-2 flex justify-end">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-[#B71C1C] hover:bg-[#7F0E0E] text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
-        >
-          <Send className="w-4 h-4 text-[#FFD700]" />
-          <span>{isSubmitting ? 'ĐANG GỬI...' : 'GỬI PHIẾU YÊU CẦU'}</span>
-        </button>
-      </div>
-    </form>
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
+              Mức độ ưu tiên <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {priorityOptions.map((p) => (
+                <label key={p.id} className="relative cursor-pointer">
+                  <input
+                    type="radio"
+                    name="priority"
+                    value={p.id}
+                    checked={priority === p.id}
+                    onChange={() => setPriority(p.id)}
+                    className="sr-only peer"
+                  />
+                  <div
+                    className={`text-center py-2 px-1 text-xs font-semibold rounded-xl border border-neutral-200 peer-checked:text-white peer-checked:border-transparent transition-all ${p.bg}`}
+                  >
+                    {p.label}
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
+              Mô tả sự cố <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              required
+              rows={4}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
+              Đính kèm ảnh hiện trạng
+            </label>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-2xl p-5 text-center transition-colors ${
+                isDragging
+                  ? 'border-[#B71C1C] bg-red-50/50'
+                  : 'border-neutral-300 hover:border-[#B71C1C]/50 bg-neutral-50/50'
+              }`}
+            >
+              <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
+              <p className="text-xs text-neutral-600 font-medium">
+                Kéo thả ảnh hoặc{' '}
+                <label className="text-[#B71C1C] font-bold hover:underline cursor-pointer">
+                  chọn từ máy
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              </p>
+            </div>
+
+            {previewUrls.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                {previewUrls.map((url, idx) => (
+                  <div
+                    key={idx}
+                    className="relative aspect-video rounded-xl overflow-hidden border border-neutral-200 group bg-neutral-100"
+                  >
+                    <img
+                      src={url}
+                      alt={`Preview ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-600 text-white rounded-lg cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-[#B71C1C] hover:bg-[#7F0E0E] text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Send className="w-4 h-4 text-[#FFD700]" />
+              <span>{isSubmitting ? 'ĐANG GỬI...' : 'GỬI PHIẾU YÊU CẦU'}</span>
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
+/** Bộ chọn loại mạng: QLAHS (WAN) / INTERNET (LAN) */
+const NetworkTypeSelector: React.FC<{
+  networkType: NetworkType;
+  onChange: (t: NetworkType) => void;
+}> = ({ networkType, onChange }) => {
+  const options: {
+    id: NetworkType;
+    label: string;
+    sub: string;
+    icon: React.ReactNode;
+  }[] = [
+    { id: 'WAN', label: 'QLAHS', sub: 'Mạng WAN', icon: <Globe className="w-5 h-5" /> },
+    { id: 'LAN', label: 'INTERNET', sub: 'Mạng LAN', icon: <Network className="w-5 h-5" /> },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {options.map((opt) => {
+        const active = networkType === opt.id;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+              active
+                ? 'border-[#B71C1C] bg-red-50/60 shadow-sm'
+                : 'border-neutral-200 bg-white hover:border-[#B71C1C]/40'
+            }`}
+          >
+            <div
+              className={`p-2 rounded-xl ${
+                active ? 'bg-[#B71C1C] text-white' : 'bg-neutral-100 text-neutral-500'
+              }`}
+            >
+              {opt.icon}
+            </div>
+            <div className="text-left">
+              <div
+                className={`text-sm font-bold ${
+                  active ? 'text-[#B71C1C]' : 'text-neutral-800'
+                }`}
+              >
+                {opt.label}
+              </div>
+              <div className="text-[11px] text-neutral-500 font-medium">{opt.sub}</div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
   );
 };
 
@@ -4639,12 +4814,8 @@ export const TicketList: React.FC<TicketListProps> = ({
                 className="w-full pl-8 pr-8 py-2 text-xs font-semibold border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B71C1C]/20 focus:border-[#B71C1C] bg-white cursor-pointer appearance-none"
               >
                 <option value="ALL">Tất cả trạng thái</option>
-                <option value="PROCESSING">Đang xử lý (gộp 3 trạng thái)</option>
-                <option value="NEW">Chờ điều phối</option>
-                <option value="ASSIGNED">Đã phân công</option>
-                <option value="WAITING_SUPPLY">Chờ vật tư</option>
+                <option value="PROCESSING">Đang xử lý</option>
                 <option value="DONE">Hoàn thành</option>
-                <option value="CANCELLED">Đã hủy</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
             </div>
@@ -4902,7 +5073,16 @@ FILE: frontend/src/components/tickets/TicketProcessForm.tsx
 
 import React, { useState, useEffect } from 'react';
 import { Ticket, TicketStatus, SupplyItem } from '../../types';
-import { Clock, Wrench, Package, Plus, Trash2, Upload, X, Check, Save } from 'lucide-react';
+import {
+  Clock,
+  Wrench,
+  Package,
+  Plus,
+  Upload,
+  X,
+  Check,
+  Save,
+} from 'lucide-react';
 import { useToast } from '../common/Toast';
 import { apiClient } from '../../services/apiClient';
 
@@ -4925,14 +5105,17 @@ interface TicketProcessFormProps {
   }) => void;
 }
 
-const COMMON_SUPPLIES = [
-  { name: 'Switch 8-port Gigabit', defaultUnit: 'cái' },
-  { name: 'Cáp mạng Cat6', defaultUnit: 'mét' },
-  { name: 'Hạt mạng RJ45', defaultUnit: 'hạt' },
-  { name: 'SSD 512GB NVMe', defaultUnit: 'ổ' },
-  { name: 'RAM 8GB DDR4', defaultUnit: 'thanh' },
-  { name: 'Cao su kéo giấy máy scan', defaultUnit: 'bộ' },
-];
+// Chuyển ISO string → giá trị cho input datetime-local (theo local timezone)
+const toLocalDatetimeValue = (iso?: string): string => {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  } catch {
+    return '';
+  }
+};
 
 export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
   ticket,
@@ -4941,96 +5124,113 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
 }) => {
   const toast = useToast();
 
+  // ─── State form ───
   const [status, setStatus] = useState<TicketStatus>(ticket.status);
-  const [scheduledAt, setScheduledAt] = useState<string>(() => {
-    if (!ticket.scheduledAt) return '';
-    try {
-      const d = new Date(ticket.scheduledAt);
-      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    } catch {
-      return '';
-    }
-  });
-  const [technicalNotes, setTechnicalNotes] = useState<string>(ticket.technicalNotes || '');
+  const [scheduledAt, setScheduledAt] = useState<string>(
+    toLocalDatetimeValue(ticket.scheduledAt)
+  );
+  const [technicalNotes, setTechnicalNotes] = useState<string>(
+    ticket.technicalNotes || ticket.processNote || ''
+  );
   const [supplies, setSupplies] = useState<SupplyItem[]>(ticket.supplies || []);
-  const [afterImages, setAfterImages] = useState<string[]>(ticket.afterImages || []);
+  const [afterImages, setAfterImages] = useState<string[]>(
+    ticket.afterImages || []
+  );
+
+  // ─── State cho phần nhập vật tư tự do ───
   const [customSupplyName, setCustomSupplyName] = useState('');
+  const [customSupplyQty, setCustomSupplyQty] = useState<number>(1);
   const [customSupplyUnit, setCustomSupplyUnit] = useState('cái');
-  const [isAddingCustom, setIsAddingCustom] = useState(false);
+
+  // ─── State kéo-thả ảnh ───
   const [isDragging, setIsDragging] = useState(false);
 
-  // Sync state if ticket changes
+  // ─── Sync state khi đổi ticket ───
   useEffect(() => {
     setStatus(ticket.status);
-    if (ticket.scheduledAt) {
-      try {
-        const d = new Date(ticket.scheduledAt);
-        setScheduledAt(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
-      } catch {
-        setScheduledAt('');
-      }
-    } else {
-      setScheduledAt('');
-    }
-    setTechnicalNotes(ticket.technicalNotes || '');
+    setScheduledAt(toLocalDatetimeValue(ticket.scheduledAt));
+    setTechnicalNotes(ticket.technicalNotes || ticket.processNote || '');
     setSupplies(ticket.supplies || []);
     setAfterImages(ticket.afterImages || []);
+
+    // Reset ô nhập vật tư
+    setCustomSupplyName('');
+    setCustomSupplyQty(1);
+    setCustomSupplyUnit('cái');
   }, [ticket.id]);
 
-  // Toggle common supply item
-  const handleToggleCommonSupply = (name: string, unit: string) => {
-    const existing = supplies.find((s) => s.name === name);
-    if (existing) {
-      setSupplies((prev) => prev.filter((s) => s.name !== name));
-    } else {
-      setSupplies((prev) => [...prev, { name, quantity: 1, unit }]);
-    }
-  };
-
-  const handleUpdateSupplyQty = (name: string, qty: number) => {
-    if (qty <= 0) {
-      setSupplies((prev) => prev.filter((s) => s.name !== name));
-      return;
-    }
-    setSupplies((prev) =>
-      prev.map((s) => (s.name === name ? { ...s, quantity: qty } : s))
-    );
-  };
-
+  // ─── Thêm vật tư ───
   const handleAddCustomSupply = () => {
-    if (!customSupplyName.trim()) return;
-    setSupplies((prev) => [
-      ...prev,
-      { name: customSupplyName.trim(), quantity: 1, unit: customSupplyUnit || 'cái' },
-    ]);
+    const name = customSupplyName.trim();
+    if (!name) return;
+
+    const qty = Math.max(1, Number(customSupplyQty) || 1);
+    const unit = customSupplyUnit.trim() || 'cái';
+
+    // Nếu trùng tên (không phân biệt hoa thường) → cộng dồn số lượng
+    const existingIndex = supplies.findIndex(
+      (s) => s.name.toLowerCase() === name.toLowerCase()
+    );
+
+    if (existingIndex >= 0) {
+      setSupplies((prev) =>
+        prev.map((s, i) =>
+          i === existingIndex ? { ...s, quantity: s.quantity + qty } : s
+        )
+      );
+    } else {
+      setSupplies((prev) => [...prev, { name, quantity: qty, unit }]);
+    }
+
+    // Reset ô nhập
     setCustomSupplyName('');
-    setIsAddingCustom(false);
+    setCustomSupplyQty(1);
+    setCustomSupplyUnit('cái');
   };
 
-  // After image upload
+  const handleRemoveSupply = (index: number) => {
+    setSupplies((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleClearAllSupplies = () => {
+    if (supplies.length === 0) return;
+    if (!confirm(`Xóa tất cả ${supplies.length} vật tư đã nhập?`)) return;
+    setSupplies([]);
+  };
+
+  // ─── Upload ảnh AFTER ───
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     processAfterFiles(Array.from(e.target.files));
+    e.target.value = ''; // cho phép chọn lại cùng file
   };
 
   const processAfterFiles = async (files: File[]) => {
-    const valid = files.filter((f) => f.type.startsWith('image/')).slice(0, 4 - afterImages.length);
+    const valid = files
+      .filter((f) => f.type.startsWith('image/'))
+      .slice(0, 4 - afterImages.length);
+
     if (valid.length === 0) {
-      toast.warning('Chỉ chấp nhận tệp hình ảnh');
+      toast.warning('Chỉ chấp nhận tệp hình ảnh (tối đa 4 ảnh)');
       return;
     }
 
     for (const file of valid) {
       try {
-        // ✅ Upload lên BE
-        await apiClient.uploadAttachment(ticket.id, file, 'AFTER');
-      } catch (err) {
+        const res = await apiClient.uploadAttachment(ticket.id, file, 'AFTER');
+        // Nếu BE trả về URL hoặc attachment → thêm vào preview
+        const url =
+          res?.attachment?.url ||
+          res?.attachment?.filePath ||
+          URL.createObjectURL(file);
+
+        setAfterImages((prev) => [...prev, url]);
+        toast.success(`Đã tải ảnh: ${file.name}`);
+      } catch (err: any) {
         console.error('Lỗi upload AFTER:', err);
-        toast.error(`Lỗi upload ảnh ${file.name}`);
+        toast.error(`Lỗi upload ảnh ${file.name}: ${err.message || ''}`);
       }
     }
-    // Reload lại attachments
-    onSave({ /* ... */ });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -5054,10 +5254,13 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
     setAfterImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // ─── Submit ───
   const handleSaveClick = () => {
     onSave({
       status,
-      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+      scheduledAt: scheduledAt
+        ? new Date(scheduledAt).toISOString()
+        : undefined,
       technicalNotes,
       supplies,
       afterImages,
@@ -5065,9 +5268,18 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
   };
 
   const handleCompleteClick = () => {
+    if (supplies.length === 0) {
+      const ok = confirm(
+        'Chưa nhập vật tư nào. Vẫn hoàn thành phiếu?'
+      );
+      if (!ok) return;
+    }
+
     onComplete({
       status: 'DONE',
-      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+      scheduledAt: scheduledAt
+        ? new Date(scheduledAt).toISOString()
+        : undefined,
       technicalNotes,
       supplies,
       afterImages,
@@ -5075,19 +5287,22 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
     });
   };
 
+  // ─── Render ───
   return (
     <div className="bg-white rounded-2xl p-5 border border-neutral-200 space-y-6">
+      {/* Header */}
       <div className="border-b border-neutral-100 pb-3 flex items-center justify-between">
         <h3 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
-          <Wrench className="w-4 h-4 text-blue-600" />
+          <Wrench className="w-4 h-4 text-[#B71C1C]" />
           Tiến trình xử lý kỹ thuật
         </h3>
-        <span className="text-xs text-neutral-400">Cập nhật bởi Kỹ thuật viên</span>
+        <span className="text-xs text-neutral-400">
+    
+        </span>
       </div>
 
-      {/* Row 1: Scheduled Time & Status */}
+      {/* Row 1: Hẹn giờ + Trạng thái */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Scheduled time */}
         <div>
           <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-neutral-500" /> Hẹn giờ xử lý
@@ -5096,11 +5311,10 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
             type="datetime-local"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
-            className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm font-medium text-neutral-800"
+            className="w-full px-3 py-2 bg-neutral-50 border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-sm font-medium text-neutral-800 outline-none"
           />
         </div>
 
-        {/* Status Dropdown */}
         <div>
           <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
             Trạng thái phiếu
@@ -5108,7 +5322,7 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as TicketStatus)}
-            className="w-full px-3 py-2 bg-white border border-neutral-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm font-semibold text-neutral-800 cursor-pointer"
+            className="w-full px-3 py-2 bg-white border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-sm font-semibold text-neutral-800 cursor-pointer outline-none"
           >
             <option value="ASSIGNED">Đã phân công (Chờ nhận)</option>
             <option value="PROCESSING">Đang xử lý</option>
@@ -5118,129 +5332,114 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
         </div>
       </div>
 
-      {/* Section: Supplies */}
+      {/* Vật tư & Linh kiện */}
       <div className="space-y-3">
         <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider flex items-center gap-1.5">
-          <Package className="w-3.5 h-3.5 text-amber-600" /> Vật tư & Linh kiện cần bổ sung
+          <Package className="w-3.5 h-3.5 text-amber-600" />
+          Vật tư cần bổ sung
         </label>
 
-        {/* Checkbox list with quantities */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {COMMON_SUPPLIES.map((item) => {
-            const selected = supplies.find((s) => s.name === item.name);
-            return (
-              <div
-                key={item.name}
-                className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-colors ${selected
-                  ? 'bg-blue-50/70 border-blue-200 text-neutral-900'
-                  : 'bg-neutral-50/70 border-neutral-200 text-neutral-600 hover:bg-neutral-100'
-                  }`}
-              >
-                <label className="flex items-center gap-2 cursor-pointer flex-1">
-                  <input
-                    type="checkbox"
-                    checked={!!selected}
-                    onChange={() => handleToggleCommonSupply(item.name, item.defaultUnit)}
-                    className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="font-medium text-xs truncate">{item.name}</span>
-                </label>
+        {/* Ô nhập vật tư */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input
+            type="text"
+            placeholder="Tên vật tư (vd: Switch 8-port, Cáp Cat6...)"
+            value={customSupplyName}
+            onChange={(e) => setCustomSupplyName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddCustomSupply();
+              }
+            }}
+            className="flex-1 px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 outline-none"
+          />
 
-                {selected && (
-                  <div className="flex items-center gap-1.5 ml-2 shrink-0">
-                    <input
-                      type="number"
-                      min={1}
-                      max={999}
-                      value={selected.quantity}
-                      onChange={(e) =>
-                        handleUpdateSupplyQty(item.name, parseInt(e.target.value) || 1)
-                      }
-                      className="w-14 px-2 py-1 bg-white border border-blue-300 rounded-lg text-xs font-bold text-center focus:outline-none"
-                    />
-                    <span className="text-[11px] text-neutral-500">{selected.unit}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Custom supply items */}
-        {supplies.filter((s) => !COMMON_SUPPLIES.some((cs) => cs.name === s.name)).length > 0 && (
-          <div className="pt-2">
-            <span className="text-xs font-semibold text-neutral-600 block mb-1.5">
-              Vật tư khác đã thêm:
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {supplies
-                .filter((s) => !COMMON_SUPPLIES.some((cs) => cs.name === s.name))
-                .map((s, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-neutral-100 border border-neutral-200 text-xs font-medium text-neutral-800"
-                  >
-                    <span>{s.name}</span>
-                    <span className="text-[#B71C1C] font-bold">
-                      x{s.quantity} {s.unit}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setSupplies((prev) => prev.filter((item) => item.name !== s.name))}
-                      className="text-neutral-400 hover:text-red-600 ml-1 cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-            </div>
-          </div>
-        )}
-
-        {/* Add custom supply toggle */}
-        {isAddingCustom ? (
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2">
             <input
-              type="text"
-              placeholder="Tên vật tư mới..."
-              value={customSupplyName}
-              onChange={(e) => setCustomSupplyName(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-xs border border-neutral-300 rounded-xl focus:border-blue-500 focus:outline-none"
+              type="number"
+              min={1}
+              max={999}
+              placeholder="SL"
+              value={customSupplyQty}
+              onChange={(e) =>
+                setCustomSupplyQty(Math.max(1, parseInt(e.target.value) || 1))
+              }
+              className="w-16 px-2 py-2 text-xs border border-neutral-300 rounded-xl text-center font-bold focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 outline-none"
             />
+
             <input
               type="text"
-              placeholder="Đơn vị (cái, mét...)"
+              placeholder="Đơn vị"
               value={customSupplyUnit}
               onChange={(e) => setCustomSupplyUnit(e.target.value)}
-              className="w-28 px-3 py-1.5 text-xs border border-neutral-300 rounded-xl focus:border-blue-500 focus:outline-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddCustomSupply();
+                }
+              }}
+              className="w-24 px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 outline-none"
             />
+
             <button
               type="button"
               onClick={handleAddCustomSupply}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 cursor-pointer"
+              disabled={!customSupplyName.trim()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#B71C1C] hover:bg-[#7F0E0E] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-colors whitespace-nowrap"
             >
+              <Plus className="w-3.5 h-3.5" />
               Thêm
             </button>
-            <button
-              type="button"
-              onClick={() => setIsAddingCustom(false)}
-              className="p-1.5 text-neutral-400 hover:text-neutral-600 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          </div>
+        </div>
+
+        {/* Danh sách vật tư đã nhập */}
+        {supplies.length > 0 ? (
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
+                Đã thêm ({supplies.length})
+              </span>
+              <button
+                type="button"
+                onClick={handleClearAllSupplies}
+                className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 hover:underline cursor-pointer"
+              >
+                Xóa tất cả
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {supplies.map((s, idx) => (
+                <span
+                  key={`${s.name}-${idx}`}
+                  className="inline-flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-lg bg-red-50 border border-red-200 text-xs text-neutral-800"
+                >
+                  <span className="font-medium">{s.name}</span>
+                  <span className="px-1.5 py-0.5 rounded-md bg-[#B71C1C] text-white text-[11px] font-bold">
+                    x{s.quantity} {s.unit}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSupply(idx)}
+                    className="p-0.5 text-neutral-400 hover:text-red-600 hover:bg-white rounded transition-colors cursor-pointer"
+                    title="Xóa vật tư này"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setIsAddingCustom(true)}
-            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer py-1"
-          >
-            <Plus className="w-3.5 h-3.5" /> Thêm vật tư khác
-          </button>
+          <p className="text-[11px] text-neutral-400 italic px-1">
+          
+          </p>
         )}
       </div>
 
-      {/* Technical Notes Textarea */}
+      {/* Ghi chú kỹ thuật */}
       <div>
         <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
           Ghi chú kỹ thuật / Tiến độ thực hiện
@@ -5250,29 +5449,30 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
           value={technicalNotes}
           onChange={(e) => setTechnicalNotes(e.target.value)}
           placeholder="Ghi lại nguyên nhân lỗi, biện pháp đã thực hiện, kết quả kiểm tra..."
-          className="w-full px-3.5 py-2.5 bg-neutral-50/50 border border-neutral-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl text-sm text-neutral-800 leading-relaxed"
+          className="w-full px-3.5 py-2.5 bg-neutral-50/50 border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-sm text-neutral-800 leading-relaxed outline-none"
         />
       </div>
 
-      {/* Upload AFTER images Drag & Drop */}
+      {/* Upload ảnh AFTER */}
       <div>
         <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
-          Ảnh nghiệm thu sau xử lý (AFTER)
+          Ảnh nghiệm thu sau xử lý 
         </label>
 
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${isDragging
-            ? 'border-blue-500 bg-blue-50/50'
-            : 'border-neutral-300 hover:border-blue-400 bg-neutral-50/50'
-            }`}
+          className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${
+            isDragging
+              ? 'border-[#B71C1C] bg-red-50/50'
+              : 'border-neutral-300 hover:border-[#B71C1C]/50 bg-neutral-50/50'
+          }`}
         >
           <Upload className="w-6 h-6 text-neutral-400 mx-auto mb-1.5" />
           <p className="text-xs text-neutral-600">
             Kéo thả ảnh kết quả hoặc{' '}
-            <label className="text-blue-600 font-bold hover:underline cursor-pointer">
+            <label className="text-[#B71C1C] font-bold hover:underline cursor-pointer">
               tải ảnh lên
               <input
                 type="file"
@@ -5283,9 +5483,11 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
               />
             </label>
           </p>
+          <p className="text-[10px] text-neutral-400 mt-1">
+            Tối đa 4 ảnh
+          </p>
         </div>
 
-        {/* After images previews */}
         {afterImages.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-2.5">
             {afterImages.map((img, idx) => (
@@ -5293,11 +5495,16 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
                 key={idx}
                 className="relative aspect-video rounded-xl overflow-hidden border border-neutral-200 group bg-neutral-100"
               >
-                <img src={img} alt="Ảnh sau xử lý" className="w-full h-full object-cover" />
+                <img
+                  src={img}
+                  alt={`Ảnh sau xử lý ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
                 <button
                   type="button"
                   onClick={() => removeAfterImage(idx)}
                   className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-600 text-white rounded-lg transition-colors cursor-pointer"
+                  title="Xóa ảnh"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -5307,7 +5514,7 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
         )}
       </div>
 
-      {/* Buttons: LƯU (xám) + HOÀN THÀNH (xanh lá) */}
+      {/* Buttons */}
       <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-100">
         <button
           type="button"
@@ -5331,6 +5538,300 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
   );
 };
 
+
+════════════════════════════════════════════════════════════
+FILE: frontend/src/components/tickets/TicketWanForm.tsx
+════════════════════════════════════════════════════════════
+
+    // TicketWanForm.tsx
+    import React, { useState } from 'react';
+    import { useAuth } from '../../context/AuthContext';
+    import { apiClient } from '../../services/apiClient';
+    import { useToast } from '../common/Toast';
+    import { TicketPriority, INCIDENT_CATEGORIES } from '../../types';
+    import { Send, Upload, X, Building2, User, Phone, Briefcase } from 'lucide-react';
+
+    interface TicketWanFormProps {
+    onSuccess: () => void;
+    }
+
+    export const TicketWanForm: React.FC<TicketWanFormProps> = ({ onSuccess }) => {
+    const { user } = useAuth();
+    const toast = useToast();
+
+    const [creatorName, setCreatorName] = useState(user?.fullName || '');
+    const [creatorPhone, setCreatorPhone] = useState(user?.phone || '');
+    const [creatorPosition, setCreatorPosition] = useState('');
+    const [creatorTitle, setCreatorTitle] = useState('');
+    const [category, setCategory] = useState(INCIDENT_CATEGORIES[0]);
+    const [description, setDescription] = useState('');
+    const [priority, setPriority] = useState<TicketPriority>('HIGH'); // mặc định Cao
+    const [images, setImages] = useState<File[]>([]);
+    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files) return;
+        processFiles(Array.from(e.target.files));
+    };
+
+    const processFiles = (files: File[]) => {
+        const validFiles = files.filter((f) => f.type.startsWith('image/')).slice(0, 4 - images.length);
+        if (validFiles.length === 0) {
+        toast.warning('Chỉ chấp nhận tệp hình ảnh (tối đa 4 ảnh)');
+        return;
+        }
+        setImages((prev) => [...prev, ...validFiles]);
+        validFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+            setPreviewUrls((prev) => [...prev, event.target!.result as string]);
+            }
+        };
+        reader.readAsDataURL(file);
+        });
+    };
+
+    const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+    const handleDragLeave = () => setIsDragging(false);
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files) processFiles(Array.from(e.dataTransfer.files));
+    };
+
+    const removeImage = (index: number) => {
+        setImages((prev) => prev.filter((_, i) => i !== index));
+        setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!description.trim()) { toast.error('Vui lòng nhập mô tả sự cố!'); return; }
+        if (!creatorPhone.trim()) { toast.error('Vui lòng nhập SĐT liên hệ!'); return; }
+
+        setIsSubmitting(true);
+
+        try {
+        const res = await apiClient.createTicket({
+            title: `[QLAHS] ${category}`,
+            description: description.trim(),
+            category,
+            priority, // chỉ HIGH hoặc URGENT
+            creatorName: creatorName.trim() || user?.fullName || 'Khách hàng',
+            creatorPhone: creatorPhone.trim(),
+            creatorPosition: creatorPosition.trim(),
+            supplies: [],
+        });
+
+        if (!res.success || !res.ticket) {
+            toast.error(res.message || 'Lỗi gửi phiếu');
+            return;
+        }
+
+        const newTicketId = res.ticket.id;
+
+        for (const file of images) {
+            try {
+            await apiClient.uploadAttachment(newTicketId, file, 'BEFORE');
+            } catch (uploadErr) {
+            console.error('Lỗi upload ảnh:', uploadErr);
+            }
+        }
+
+        toast.success(`Gửi phiếu [${res.ticket.code}] thành công!`);
+        setDescription('');
+        setImages([]);
+        setPreviewUrls([]);
+        onSuccess();
+        } catch (err: any) {
+        toast.error(err.message || 'Lỗi kết nối');
+        } finally {
+        setIsSubmitting(false);
+        }
+    };
+
+    // Chỉ 2 mức ưu tiên cho WAN
+    const wanPriorityOptions = [
+        { id: 'HIGH' as TicketPriority, label: 'Cao', bg: 'peer-checked:bg-amber-500' },
+        { id: 'URGENT' as TicketPriority, label: 'Khẩn cấp', bg: 'peer-checked:bg-[#B71C1C]' },
+    ];
+
+    return (
+        <form onSubmit={handleSubmit}className="space-y-6">
+        <div className="border-b border-neutral-100 pb-4">
+            <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#B71C1C]" />
+            Tạo phiếu yêu cầu hỗ trợ kỹ thuật nền tảng QLAHS
+            </h2>
+            <p className="text-xs text-neutral-500 mt-1">
+            Điền đầy đủ thông tin để Bộ phận " Công nghệ thông tin - chuyển đổi số " tiếp nhận và xử lý nhanh chóng.
+            </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-[#B71C1C]" /> Đơn vị
+            </label>
+            <input
+                type="text"
+                readOnly
+                value={user?.departmentName || user?.department?.name || 'Chưa gán đơn vị'}
+                className="w-full px-3.5 py-2.5 bg-neutral-100 border border-neutral-200 rounded-xl text-neutral-600 text-sm font-medium cursor-not-allowed"
+            />
+            </div>
+
+            <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-neutral-500" /> Người tạo phiếu <span className="text-red-500">*</span>
+            </label>
+            <input
+                type="text"
+                required
+                value={creatorName}
+                onChange={(e) => setCreatorName(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-neutral-800 text-sm font-medium"
+            />
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-neutral-500" /> Vị trí
+            </label>
+            <input
+                type="text"
+                value={creatorPosition}
+                onChange={(e) => setCreatorPosition(e.target.value)}
+                placeholder=""
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
+            />
+            </div>
+
+            <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-neutral-500" /> Chức vụ
+            </label>
+            <input
+                type="text"
+                value={creatorTitle}
+                onChange={(e) => setCreatorTitle(e.target.value)}
+                placeholder=""
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
+            />
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-neutral-500" /> SĐT liên hệ <span className="text-red-500">*</span>
+            </label>
+            <input
+                type="tel"
+                required
+                value={creatorPhone}
+                onChange={(e) => setCreatorPhone(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
+            />
+            </div>
+        </div>
+
+        <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
+             Mức độ <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+            {wanPriorityOptions.map((p) => (
+                <label key={p.id} className="relative cursor-pointer">
+                <input
+                    type="radio"
+                    name="priority"
+                    value={p.id}
+                    checked={priority === p.id}
+                    onChange={() => setPriority(p.id)}
+                    className="sr-only peer"
+                />
+                <div className={`text-center py-2 px-1 text-xs font-semibold rounded-xl border border-neutral-200 peer-checked:text-white peer-checked:border-transparent transition-all ${p.bg}`}>
+                    {p.label}
+                </div>
+                </label>
+            ))}
+            </div>
+        </div>
+
+        <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
+            Mô tả sự cố <span className="text-red-500">*</span>
+            </label>
+            <textarea
+            required
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder=""
+            className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm"
+            />
+        </div>
+
+        <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
+            Đính kèm hiện trạng
+            </label>
+            <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-2xl p-5 text-center transition-colors ${
+                isDragging ? 'border-[#B71C1C] bg-red-50/50' : 'border-neutral-300 hover:border-[#B71C1C]/50 bg-neutral-50/50'
+            }`}
+            >
+            <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
+            <p className="text-xs text-neutral-600 font-medium">
+                Kéo thả ảnh hoặc{' '}
+                <label className="text-[#B71C1C] font-bold hover:underline cursor-pointer">
+                chọn từ máy
+                <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
+                </label>
+            </p>
+            </div>
+
+            {previewUrls.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                {previewUrls.map((url, idx) => (
+                <div key={idx} className="relative aspect-video rounded-xl overflow-hidden border border-neutral-200 group bg-neutral-100">
+                    <img src={url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-600 text-white rounded-lg cursor-pointer"
+                    >
+                    <X className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+                ))}
+            </div>
+            )}
+        </div>
+
+        <div className="pt-2 flex justify-end">
+            <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-[#B71C1C] hover:bg-[#7F0E0E] text-white font-bold text-sm rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
+            >
+            <Send className="w-4 h-4 text-[#FFD700]" />
+            <span>{isSubmitting ? 'ĐANG GỬI...' : 'GỬI PHIẾU WAN'}</span>
+            </button>
+        </div>
+        </form>
+    );
+    };
 
 
 ════════════════════════════════════════════════════════════
@@ -5664,36 +6165,7 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  // 4. SỬA KHỐI RENDER TicketList (trong activeTab === 'all-tickets')
-  {
-    activeTab === 'all-tickets' && (
-      <TicketList
-        tickets={tickets}
-        onSelectTicket={(t) => setViewingTicket(t)}
-        title={
-          ticketListFilter === 'PROCESSING'
-            ? 'Phiếu đang xử lý'
-            : ticketListFilter === 'DONE'
-              ? 'Phiếu đã hoàn thành'
-              : 'Tất cả phiếu yêu cầu kỹ thuật toàn viện'
-        }
-        showFilters={true}
-        initialStatusFilter={ticketListFilter}
-        onFilterChange={() => setTicketListFilter('ALL')}
-        onEdit={(t) => setEditingTicket(t)}       // ✅ THÊM
-        onDelete={handleDeleteTicket}             // ✅ THÊM
-        canManage={user?.role === 'ADMIN'}        // ✅ THÊM — chỉ ADMIN
-      />
-    )
-  }
 
-  // 5. THÊM MODAL — đặt cạnh RatingModal
-  <TicketEditModal
-    isOpen={!!editingTicket}
-    onClose={() => setEditingTicket(null)}
-    ticket={editingTicket}
-    onSaved={loadData}
-  />
 
   return (
     <div className="min-h-screen bg-[#F5F5F0] flex flex-col">
@@ -5757,11 +6229,14 @@ export const AdminDashboard: React.FC = () => {
                     ? 'Phiếu đang xử lý'
                     : ticketListFilter === 'DONE'
                       ? 'Phiếu đã hoàn thành'
-                      : 'Tất cả phiếu yêu cầu kỹ thuật toàn viện'
+                      : 'Phiếu yêu cầu kỹ thuật toàn thành phố'
                 }
                 showFilters={true}
                 initialStatusFilter={ticketListFilter}
                 onFilterChange={() => setTicketListFilter('ALL')}
+                onEdit={(t) => setEditingTicket(t)}
+                onDelete={handleDeleteTicket}
+                canManage={user?.role === 'ADMIN'}
               />
             )}
 
@@ -5974,6 +6449,12 @@ export const AdminDashboard: React.FC = () => {
         ticket={ratingTicket}
         onRated={loadData}
       />
+      <TicketEditModal
+        isOpen={!!editingTicket}
+        onClose={() => setEditingTicket(null)}
+        ticket={editingTicket}
+        onSaved={loadData}
+      />
 
       <TechnicalKpiModal
         isOpen={isKpiModalOpen}
@@ -6083,21 +6564,11 @@ export const CustomerDashboard: React.FC = () => {
               }`}
             >
               <PlusCircle className="w-4 h-4 text-[#FFD700]" />
-              <span>+ Tạo phiếu mới</span>
+              <span>Tạo phiếu mới</span>
             </button>
           </div>
 
-          <a
-            href="/admin"
-            onClick={(e) => {
-              e.preventDefault();
-              window.history.pushState({}, '', '/admin');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            className="text-xs font-bold text-[#B71C1C] hover:underline"
-          >
-            Vào Không gian làm việc đầy đủ →
-          </a>
+
         </div>
 
         {activeTab === 'create' && (
@@ -6370,8 +6841,68 @@ import { TicketProcessForm } from '../components/tickets/TicketProcessForm';
 import { TechnicalKpiModal } from '../components/technical/TechnicalKpiModal';
 import { useToast } from '../components/common/Toast';
 import {
-  Award, User, Phone, Building2, ExternalLink, X, FileText,
+  Award,
+  User,
+  Phone,
+  Building2,
+  ExternalLink,
+  X,
+  FileText,
+  Inbox,
+  ArrowLeft,
+  Image as ImageIcon,
+  Layers,
 } from 'lucide-react';
+
+// ─── Cấu hình màu cho từng nhóm trạng thái ───
+type GroupConfig = {
+  id: TicketStatus;
+  title: string;
+  accent: string;      // màu chữ + vạch trái
+  bgSoft: string;      // nền nhạt cho header nhóm
+  border: string;
+  dot: string;
+  badge: string;
+};
+
+const QUEUE_GROUPS: GroupConfig[] = [
+  {
+    id: 'ASSIGNED',
+    title: 'Chờ nhận nhiệm vụ',
+    accent: 'text-indigo-700',
+    bgSoft: 'bg-indigo-50',
+    border: 'border-indigo-200',
+    dot: 'bg-indigo-500',
+    badge: 'bg-indigo-100 text-indigo-800',
+  },
+  {
+    id: 'PROCESSING',
+    title: 'Đang xử lý',
+    accent: 'text-blue-700',
+    bgSoft: 'bg-blue-50',
+    border: 'border-blue-200',
+    dot: 'bg-blue-500',
+    badge: 'bg-blue-100 text-blue-800',
+  },
+  {
+    id: 'WAITING_SUPPLY',
+    title: 'Chờ vật tư',
+    accent: 'text-amber-700',
+    bgSoft: 'bg-amber-50',
+    border: 'border-amber-200',
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-100 text-amber-800',
+  },
+  {
+    id: 'DONE',
+    title: 'Hoàn thành',
+    accent: 'text-emerald-700',
+    bgSoft: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    dot: 'bg-emerald-500',
+    badge: 'bg-emerald-100 text-emerald-800',
+  },
+];
 
 export const TechnicalDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -6400,12 +6931,22 @@ export const TechnicalDashboard: React.FC = () => {
     return () => clearInterval(timer);
   }, [user?.id]);
 
-  const queueGroups = useMemo(() => [
-    { id: 'ASSIGNED' as TicketStatus, title: 'Chờ nhận nhiệm vụ', colorClass: 'border-blue-400 bg-blue-50/50 text-blue-800', dotClass: 'bg-blue-500', tickets: tickets.filter((t) => t.status === 'ASSIGNED') },
-    { id: 'PROCESSING' as TicketStatus, title: 'Đang xử lý', colorClass: 'border-amber-400 bg-amber-50/50 text-amber-800', dotClass: 'bg-amber-500', tickets: tickets.filter((t) => t.status === 'PROCESSING') },
-    { id: 'WAITING_SUPPLY' as TicketStatus, title: 'Chờ vật tư', colorClass: 'border-orange-400 bg-orange-50/50 text-orange-800', dotClass: 'bg-orange-500', tickets: tickets.filter((t) => t.status === 'WAITING_SUPPLY') },
-    { id: 'DONE' as TicketStatus, title: 'Hoàn thành', colorClass: 'border-emerald-400 bg-emerald-50/50 text-emerald-800', dotClass: 'bg-emerald-500', tickets: tickets.filter((t) => t.status === 'DONE') },
-  ], [tickets]);
+  // ─── Gộp nhóm theo trạng thái ───
+  const queueGroups = useMemo(() => {
+    return QUEUE_GROUPS.map((cfg) => ({
+      ...cfg,
+      tickets: tickets.filter((t) => t.status === cfg.id),
+    }));
+  }, [tickets]);
+
+  const totalInQueue = useMemo(
+    () =>
+      queueGroups.reduce(
+        (sum, g) => sum + (g.id === 'DONE' ? 0 : g.tickets.length),
+        0
+      ),
+    [queueGroups]
+  );
 
   const activeTicket = useMemo(() => {
     if (selectedTicketId) {
@@ -6416,6 +6957,7 @@ export const TechnicalDashboard: React.FC = () => {
     return pending || tickets[0] || null;
   }, [tickets, selectedTicketId]);
 
+  // ─── Xử lý cập nhật ───
   const handleSaveProgress = async (updates: {
     status: TicketStatus;
     scheduledAt?: string;
@@ -6469,58 +7011,87 @@ export const TechnicalDashboard: React.FC = () => {
     }
   };
 
+  const goToAdmin = () => {
+    window.history.pushState({}, '', '/admin');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F0] flex flex-col">
+      {/* ═══ HEADER ═══ */}
       <Header
         rightAction={
           <div className="flex items-center gap-2">
-            <a
-              href="/admin"
-              onClick={(e) => {
-                e.preventDefault();
-                window.history.pushState({}, '', '/admin');
-                window.dispatchEvent(new PopStateEvent('popstate'));
-              }}
-              className="text-xs font-bold text-[#B71C1C] hover:underline px-2 hidden sm:inline"
+            <button
+              type="button"
+              onClick={goToAdmin}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/25 transition-all cursor-pointer backdrop-blur-sm"
+              title="Về không gian quản trị"
             >
-              ← Toàn bộ hệ thống
-            </a>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Toàn bộ hệ thống
+            </button>
             <button
               type="button"
               onClick={() => setIsKpiModalOpen(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs border border-white/30 transition-all cursor-pointer backdrop-blur-sm"
+              title="Xem chỉ số KPI kỹ thuật"
             >
-              <Award className="w-4 h-4 text-white" />
-              <span>Báo cáo KPI</span>
+              <Award className="w-4 h-4" />
+              <span className="hidden sm:inline">Báo cáo KPI</span>
             </button>
           </div>
         }
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5">
+        {/* Thanh thông tin nhanh */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 bg-white border border-neutral-200 rounded-full px-3 py-1">
+            <Layers className="w-3.5 h-3.5 text-[#B71C1C]" />
+            Tổng phiếu được giao: <strong className="text-neutral-900">{tickets.length}</strong>
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-full px-3 py-1">
+            <Inbox className="w-3.5 h-3.5" />
+            Đang chờ xử lý: <strong>{totalInQueue}</strong>
+          </span>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          <div className="lg:col-span-4 space-y-4">
+          {/* ═══ LEFT: Hàng đợi ═══ */}
+          <div className="lg:col-span-4 space-y-3">
             <div className="flex items-center justify-between px-1">
               <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                Hàng đợi ({tickets.length})
+                Hàng đợi xử lý
+              </span>
+              <span className="text-[11px] text-neutral-400">
+                Bấm để xem chi tiết
               </span>
             </div>
 
-            <div className="space-y-4 max-h-[calc(100vh-140px)] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-1">
               {queueGroups.map((group) => (
                 <div key={group.id} className="space-y-2">
-                  <div className={`flex items-center justify-between px-3 py-1.5 rounded-xl border text-xs font-bold ${group.colorClass}`}>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${group.dotClass}`} />
-                      <span>{group.title}</span>
+                  {/* Header nhóm */}
+                  <div
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl border ${group.border} ${group.bgSoft}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${group.dot}`} />
+                      <span className={`text-xs font-bold ${group.accent}`}>
+                        {group.title}
+                      </span>
                     </div>
-                    <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-white/80 font-mono">
+                    <span
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${group.badge}`}
+                    >
                       {group.tickets.length}
                     </span>
                   </div>
 
+                  {/* Danh sách phiếu */}
                   {group.tickets.length === 0 ? (
-                    <div className="text-[11px] text-neutral-400 italic px-3 py-1">
+                    <div className="text-[11px] text-neutral-400 italic px-3 py-1.5">
                       Không có phiếu
                     </div>
                   ) : (
@@ -6531,26 +7102,40 @@ export const TechnicalDashboard: React.FC = () => {
                           <div
                             key={t.id}
                             onClick={() => setSelectedTicketId(t.id)}
-                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                            className={`relative p-3.5 rounded-2xl border transition-all cursor-pointer bg-white ${
                               isSelected
-                                ? 'bg-white border-[#B71C1C] ring-2 ring-red-800/10 shadow-md'
-                                : 'bg-white border-neutral-200 hover:border-neutral-300'
+                                ? 'border-[#B71C1C] ring-2 ring-[#B71C1C]/15 shadow-md'
+                                : 'border-neutral-200 hover:border-neutral-300 hover:shadow-sm'
                             }`}
                           >
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="font-mono font-bold text-xs bg-neutral-100 px-2 py-0.5 rounded text-neutral-800">
-                                {t.code}
-                              </span>
-                              <PriorityBadge priority={t.priority} size="sm" />
-                            </div>
-                            <h4 className="font-bold text-xs text-neutral-900 line-clamp-2 mb-1">
-                              {t.title}
-                            </h4>
-                            <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-1 border-t border-neutral-100">
-                              <span className="truncate max-w-[140px]">{t.departmentName}</span>
-                              <span className="text-neutral-400 font-mono">
-                                {new Date(t.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
-                              </span>
+                            {/* Vạch trái màu nhóm */}
+                            <span
+                              className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${group.dot}`}
+                            />
+
+                            <div className="pl-2">
+                              <div className="flex items-center justify-between gap-2 mb-1.5">
+                                <span className="font-mono font-bold text-[11px] bg-neutral-100 text-neutral-800 px-2 py-0.5 rounded">
+                                  {t.code}
+                                </span>
+                                <PriorityBadge priority={t.priority} size="sm" />
+                              </div>
+
+                              <h4 className="font-bold text-xs text-neutral-900 line-clamp-2 leading-snug mb-1.5">
+                                {t.title}
+                              </h4>
+
+                              <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-1.5 border-t border-neutral-100">
+                                <span className="truncate max-w-[150px]">
+                                  {t.departmentName}
+                                </span>
+                                <span className="text-neutral-400 font-mono shrink-0 ml-2">
+                                  {new Date(t.createdAt).toLocaleDateString(
+                                    'vi-VN',
+                                    { day: '2-digit', month: '2-digit' }
+                                  )}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -6562,75 +7147,133 @@ export const TechnicalDashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* ═══ RIGHT: Chi tiết + Form xử lý ═══ */}
           <div className="lg:col-span-8 space-y-5">
             {activeTicket ? (
-              <div className="space-y-5">
-                <div className="bg-white rounded-2xl p-6 border border-neutral-200/90 shadow-2xs space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 pb-3">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono font-bold text-sm bg-neutral-100 text-neutral-800 px-2.5 py-0.5 rounded-lg border border-neutral-200">
-                          {activeTicket.code}
-                        </span>
-                        <StatusBadge status={activeTicket.status} size="sm" />
-                        <PriorityBadge priority={activeTicket.priority} size="sm" />
+              <>
+                {/* Card thông tin phiếu */}
+                <div className="bg-white rounded-2xl border border-neutral-200/90 shadow-2xs overflow-hidden">
+                  {/* Dải màu trên đầu card */}
+                  <div className="h-1 bg-gradient-to-r from-[#8E0000] via-[#B71C1C] to-[#8E0000]" />
+
+                  <div className="p-5 sm:p-6 space-y-5">
+                    {/* Tiêu đề + badge */}
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-4 border-b border-neutral-100">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className="font-mono font-bold text-sm bg-neutral-100 text-neutral-800 px-2.5 py-0.5 rounded-lg border border-neutral-200">
+                            {activeTicket.code}
+                          </span>
+                          <StatusBadge status={activeTicket.status} size="sm" />
+                          <PriorityBadge priority={activeTicket.priority} size="sm" />
+                          <span className="text-[11px] px-2.5 py-1 rounded-lg bg-red-50 text-[#B71C1C] border border-red-100 font-semibold">
+                            {activeTicket.category}
+                          </span>
+                        </div>
+                        <h2 className="text-base sm:text-lg font-bold text-neutral-900 leading-snug">
+                          {activeTicket.title}
+                        </h2>
                       </div>
-                      <h2 className="text-lg font-bold text-neutral-900 leading-snug">
-                        {activeTicket.title}
-                      </h2>
                     </div>
-                    <div className="text-right text-xs text-neutral-500">
-                      <div>Loại: <span className="font-semibold text-[#B71C1C]">{activeTicket.category}</span></div>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-neutral-50 p-3.5 rounded-xl border border-neutral-200/60 text-xs">
-                    <div>
-                      <span className="text-neutral-400 block flex items-center gap-1">
-                        <User className="w-3.5 h-3.5" /> Người gửi:
-                      </span>
-                      <span className="font-semibold text-neutral-800">
-                        {activeTicket.creatorName} ({activeTicket.creatorPosition})
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-400 block flex items-center gap-1">
-                        <Building2 className="w-3.5 h-3.5" /> Đơn vị:
-                      </span>
-                      <span className="font-medium text-neutral-800 truncate block">
-                        {activeTicket.departmentName}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-neutral-400 block flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5" /> SĐT:
-                      </span>
-                      <a href={`tel:${activeTicket.creatorPhone}`} className="font-bold text-blue-600 hover:underline">
-                        {activeTicket.creatorPhone}
-                      </a>
-                    </div>
-                  </div>
+                    {/* Grid thông tin người gửi */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-neutral-50 rounded-xl p-3 border border-neutral-200/60">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                          <User className="w-3 h-3" />
+                          Người gửi
+                        </div>
+                        <div className="text-xs font-bold text-neutral-900 truncate">
+                          {activeTicket.creatorName}
+                        </div>
+                        <div className="text-[11px] text-neutral-500 truncate">
+                          {activeTicket.creatorPosition}
+                        </div>
+                      </div>
 
-                  <div>
-                    <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5 text-[#B71C1C]" /> Nội dung sự cố:
-                    </h4>
-                    <p className="text-xs text-neutral-700 bg-neutral-50/70 p-3 rounded-xl border border-neutral-200/60 whitespace-pre-wrap leading-relaxed">
-                      {activeTicket.description}
-                    </p>
+                      <div className="bg-neutral-50 rounded-xl p-3 border border-neutral-200/60">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                          <Building2 className="w-3 h-3" />
+                          Đơn vị
+                        </div>
+                        <div className="text-xs font-medium text-neutral-800 line-clamp-2">
+                          {activeTicket.departmentName}
+                        </div>
+                      </div>
+
+                      <div className="bg-neutral-50 rounded-xl p-3 border border-neutral-200/60">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                          <Phone className="w-3 h-3" />
+                          Liên hệ
+                        </div>
+                        <a
+                          href={`tel:${activeTicket.creatorPhone}`}
+                          className="text-xs font-bold text-[#B71C1C] hover:underline"
+                        >
+                          {activeTicket.creatorPhone}
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Nội dung sự cố */}
+                    <div>
+                      <h4 className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-[#B71C1C]" />
+                        Nội dung sự cố
+                      </h4>
+                      <p className="text-xs text-neutral-700 bg-neutral-50/70 p-3.5 rounded-xl border border-neutral-200/60 whitespace-pre-wrap leading-relaxed">
+                        {activeTicket.description}
+                      </p>
+                    </div>
+
+                    {/* Ảnh BEFORE nếu có */}
+                    {activeTicket.beforeImages &&
+                      activeTicket.beforeImages.length > 0 && (
+                        <div>
+                          <h4 className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <ImageIcon className="w-3.5 h-3.5 text-[#B71C1C]" />
+                            Ảnh hiện trạng ban đầu ({activeTicket.beforeImages.length})
+                          </h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {activeTicket.beforeImages.map((img, idx) => (
+                              <div
+                                key={idx}
+                                onClick={() => setPreviewImage(img)}
+                                className="group relative aspect-video rounded-xl overflow-hidden border border-neutral-200 cursor-pointer bg-neutral-100"
+                              >
+                                <img
+                                  src={img}
+                                  alt={`Ảnh ${idx + 1}`}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                  <ExternalLink className="w-4 h-4" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
                 </div>
 
+                {/* Form xử lý */}
                 <TicketProcessForm
                   ticket={activeTicket}
                   onSave={handleSaveProgress}
                   onComplete={handleCompleteTicket}
                 />
-              </div>
+              </>
             ) : (
               <div className="bg-white rounded-2xl p-12 text-center border border-neutral-200 shadow-2xs">
-                <p className="text-sm text-neutral-500">
-                  Chọn một phiếu để xem chi tiết.
+                <div className="w-14 h-14 rounded-2xl bg-neutral-100 text-neutral-400 flex items-center justify-center mx-auto mb-3">
+                  <FileText className="w-7 h-7" />
+                </div>
+                <p className="text-sm font-semibold text-neutral-700">
+                  Chưa có phiếu nào
+                </p>
+                <p className="text-xs text-neutral-500 mt-1">
+                  Chọn một phiếu bên trái để xem chi tiết và cập nhật xử lý.
                 </p>
               </div>
             )}
@@ -6638,6 +7281,7 @@ export const TechnicalDashboard: React.FC = () => {
         </div>
       </main>
 
+      {/* Modal KPI */}
       <TechnicalKpiModal
         isOpen={isKpiModalOpen}
         onClose={() => setIsKpiModalOpen(false)}
@@ -6646,16 +7290,21 @@ export const TechnicalDashboard: React.FC = () => {
         technicianId={user?.id}
       />
 
+      {/* Lightbox xem ảnh */}
       {previewImage && (
         <div
-          className="fixed inset-0 z-60 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setPreviewImage(null)}
         >
           <div className="relative max-w-4xl max-h-[90vh]">
-            <img src={previewImage} alt="Preview" className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl" />
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
+            />
             <button
               onClick={() => setPreviewImage(null)}
-              className="absolute -top-10 right-0 text-white hover:text-amber-300 p-2 text-sm font-semibold flex items-center gap-1 cursor-pointer"
+              className="absolute -top-10 right-0 text-white hover:text-white/80 p-2 text-sm font-semibold flex items-center gap-1 cursor-pointer"
             >
               <X className="w-5 h-5" /> Đóng
             </button>
@@ -7850,10 +8499,9 @@ export const INCIDENT_CATEGORIES = [
 ];
 
 export const CREATOR_POSITIONS = [
-  'Kiểm sát viên cao cấp',
+  
   'Kiểm sát viên trung cấp',
   'Kiểm sát viên sơ cấp',
-  'Kiểm tra viên chính',
   'Kiểm tra viên',
   'Chuyên viên',
   'Khác',
@@ -7929,5 +8577,5 @@ export default defineConfig(() => {
   TỔNG KẾT — FE
 ════════════════════════════════════════════════════════════
 
-Tổng số file đã export: 40
-Ngày xuất: 2026-10-11 12:50:38
+Tổng số file đã export: 41
+Ngày xuất: 2026-10-12 17:10:02

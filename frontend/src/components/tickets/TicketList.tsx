@@ -14,7 +14,9 @@ import {
   X,
   Edit2,
   Trash2,
-} from 'lucide-react';   // ✅ THÊM Edit2, Trash2
+  Printer,
+} from 'lucide-react';
+import { TicketPrintModal } from './TicketPrintModal';
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -51,6 +53,7 @@ export const TicketList: React.FC<TicketListProps> = ({
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [printingTicket, setPrintingTicket] = useState<Ticket | null>(null);
 
   useEffect(() => {
     setStatusFilter(initialStatusFilter);
@@ -393,6 +396,14 @@ export const TicketList: React.FC<TicketListProps> = ({
                         >
                           <button
                             type="button"
+                            onClick={() => setPrintingTicket(t)}
+                            className="p-1.5 rounded-lg text-[#B71C1C] hover:bg-red-50 transition-colors cursor-pointer"
+                            title="In phiếu kiểm tra"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => onEdit?.(t)}
                             className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
                             title="Sửa phiếu"
@@ -473,6 +484,12 @@ export const TicketList: React.FC<TicketListProps> = ({
           </div>
         )}
       </div>
+
+      <TicketPrintModal
+        isOpen={!!printingTicket}
+        onClose={() => setPrintingTicket(null)}
+        ticket={printingTicket}
+      />
     </div>
   );
 };

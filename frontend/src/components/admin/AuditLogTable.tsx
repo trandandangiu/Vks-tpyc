@@ -131,11 +131,20 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs }) => {
               ) : (
                 filteredLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-neutral-50/80 transition-colors">
-                    <td>{formatDate(log.createdAt)}</td>
-                    <td>{log.userName}</td>
-                    <td>{log.action}</td>
-                    <td>{log.entityType} {log.entityId && `(${log.entityId})`}</td>
-                    <td>{log.ipAddress}</td>
+                    <td className="py-3 px-4 whitespace-nowrap text-neutral-600">
+                      {formatDate(log.createdAt || log.timestamp || '')}
+                    </td>
+                    <td className="py-3 px-4 font-semibold text-neutral-800">
+                      {log.userName || log.user || 'Hệ thống'}
+                    </td>
+                    <td className="py-3 px-4 text-neutral-800">{log.action}</td>
+                    <td className="py-3 px-4 text-neutral-600 font-mono text-[11px]">
+                      {log.entityType || log.entity || '---'}{' '}
+                      {log.entityId && `(${log.entityId.slice(0, 8)})`}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-neutral-500">
+                      {log.ipAddress || log.ip || '---'}
+                    </td>
                     <td className="py-3 px-4 text-center whitespace-nowrap">
                       {getLevelBadge(log.level)}
                     </td>

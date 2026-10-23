@@ -3,6 +3,8 @@ import {
   LayoutDashboard,
   Ticket,
   GitPullRequest,
+  Wrench,
+  PlusCircle,
   Users,
   Building,
   ShieldAlert,
@@ -12,8 +14,10 @@ import logoUrl from '../../public/icon.ico';
 
 export type AdminTab =
   | 'dashboard'
+  | 'create-ticket'
   | 'all-tickets'
   | 'dispatch'
+  | 'process'
   | 'users'
   | 'departments'
   | 'audit-logs';
@@ -49,6 +53,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Điều phối kỹ thuật',
       icon: GitPullRequest,
       badge: newTicketsCount > 0 ? newTicketsCount : null,
+    },
+    {
+      id: 'process' as AdminTab,
+      label: 'Xử lý & In phiếu KT',
+      icon: Wrench,
+    },
+    {
+      id: 'create-ticket' as AdminTab,
+      label: 'Tạo phiếu mới',
+      icon: PlusCircle,
     },
     {
       id: 'users' as AdminTab,

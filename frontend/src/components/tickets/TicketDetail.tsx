@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Ticket } from '../../types';
 import { StatusBadge, PriorityBadge } from '../common/StatusBadge';
 import { StarRating } from './StarRating';
+import { TicketPrintModal } from './TicketPrintModal';
 import {
   User,
   Phone,
@@ -16,6 +17,7 @@ import {
   ExternalLink,
   X,
   CheckCircle2,
+  Printer,
 } from 'lucide-react';
 
 interface TicketDetailProps {
@@ -32,6 +34,7 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
   canRate = false,
 }) => {
   const [activeImage, setActiveImage] = useState<string | null>(null);
+  const [isPrintOpen, setIsPrintOpen] = useState(false);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '---';
@@ -47,6 +50,48 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
       return dateStr;
     }
   };
+
+  const noteText = ticket.processNote || ticket.technicalNotes || '';
+  const beforeImgs = ticket.beforeImages || [];
+  const afterImgs = ticket.afterImages || [];
+
+  // Parse feedback (hỗ trợ cả string từ Backend lẫn object RatingFeedback)
+  const parsedFeedback = (() => {
+    if (!ticket.rating && !ticket.feedback) return null;
+    if (typeof ticket.feedback === 'object' && ticket.feedback !== null) {
+      return {
+        stars: ticket.feedback.stars || ticket.rating || 5,
+        speedRating: ticket.feedback.speedRating,
+        attitudeRating: ticket.feedback.attitudeRating,
+        effectivenessRating: ticket.feedback.effectivenessRating,
+        comment: ticket.feedback.comment,
+        submittedAt: ticket.feedback.submittedAt || ticket.ratedAt,
+      };
+    }
+    const raw = typeof ticket.feedback === 'string' ? ticket.feedback : '';
+    const parts = raw.split('•').map((s) => s.trim()).filter(Boolean);
+    let speedRating: string | undefined;
+    let attitudeRating: string | undefined;
+    let effectivenessRating: string | undefined;
+    const comments: string[] = [];
+
+    for (const p of parts) {
+      if (p.startsWith('Tốc độ:')) speedRating = p.replace('Tốc độ:', '').trim();
+      else if (p.startsWith('Thái độ:')) attitudeRating = p.replace('Thái độ:', '').trim();
+      else if (p.startsWith('Hiệu quả:')) effectivenessRating = p.replace('Hiệu quả:', '').trim();
+      else if (p.startsWith('Nhận xét:')) comments.push(p.replace('Nhận xét:', '').trim());
+      else comments.push(p);
+    }
+
+    return {
+      stars: ticket.rating || 5,
+      speedRating,
+      attitudeRating,
+      effectivenessRating,
+      comment: comments.join(' • ') || undefined,
+      submittedAt: ticket.ratedAt,
+    };
+  })();
 
   return (
     <div className="space-y-6">
@@ -73,7 +118,7 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
       )}
 
       {/* Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-neutral-200">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-4 border-b border-neutral-200">
         <div>
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <span className="font-mono font-bold text-sm bg-neutral-100 text-neutral-800 px-3 py-1 rounded-lg border border-neutral-200">
@@ -87,6 +132,15 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
           </div>
           <h2 className="text-xl font-bold text-neutral-900 mt-2">{ticket.title}</h2>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsPrintOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-[#B71C1C] border border-red-200 font-bold text-xs transition-colors cursor-pointer shrink-0 self-start"
+        >
+          <Printer className="w-4 h-4" />
+          <span>In phiếu kiểm tra</span>
+        </button>
       </div>
 
       {/* Grid: Creator Info & Technical Info */}
@@ -184,16 +238,16 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
       </div>
 
       {/* Technical notes & Supplies */}
-      {(ticket.technicalNotes || (ticket.supplies && ticket.supplies.length > 0)) && (
+      {(noteText || (ticket.supplies && ticket.supplies.length > 0)) && (
         <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-200 space-y-3">
           <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
             <Wrench className="w-3.5 h-3.5 text-amber-700" /> Báo cáo kỹ thuật viên
           </h4>
-          {ticket.technicalNotes && (
+          {noteText && (
             <div>
               <span className="text-xs font-semibold text-amber-800 block mb-1">Ghi chú xử lý:</span>
-              <p className="text-sm text-neutral-800 bg-white p-3 rounded-xl border border-amber-200 leading-relaxed">
-                {ticket.technicalNotes}
+              <p className="text-sm text-neutral-800 bg-white p-3 rounded-xl border border-amber-200 leading-relaxed whitespace-pre-wrap">
+                {noteText}
               </p>
             </div>
           )}
@@ -226,11 +280,11 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
         {/* Before images */}
         <div className="bg-white rounded-2xl p-4 border border-neutral-200">
           <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-            Ảnh hiện trạng trước xử lý ({ticket.beforeImages?.length || 0})
+            Ảnh hiện trạng trước xử lý ({beforeImgs.length})
           </h4>
-          {ticket.beforeImages && ticket.beforeImages.length > 0 ? (
+          {beforeImgs.length > 0 ? (
             <div className="grid grid-cols-2 gap-2">
-              {ticket.beforeImages.map((img, idx) => (
+              {beforeImgs.map((img, idx) => (
                 <div
                   key={idx}
                   onClick={() => setActiveImage(img)}
@@ -255,11 +309,11 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
         {/* After images */}
         <div className="bg-white rounded-2xl p-4 border border-neutral-200">
           <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">
-            Ảnh nghiệm thu sau xử lý ({ticket.afterImages?.length || 0})
+            Ảnh nghiệm thu sau xử lý ({afterImgs.length})
           </h4>
-          {ticket.afterImages && ticket.afterImages.length > 0 ? (
+          {afterImgs.length > 0 ? (
             <div className="grid grid-cols-2 gap-2">
-              {ticket.afterImages.map((img, idx) => (
+              {afterImgs.map((img, idx) => (
                 <div
                   key={idx}
                   onClick={() => setActiveImage(img)}
@@ -283,48 +337,50 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
       </div>
 
       {/* Customer Feedback / Rating Section */}
-      {ticket.feedback ? (
+      {parsedFeedback ? (
         <div className="bg-emerald-50/70 rounded-2xl p-4 border border-emerald-200 space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
               <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> Đánh giá từ đơn vị
             </h4>
             <span className="text-xs text-emerald-700">
-              {formatDate(ticket.feedback.submittedAt)}
+              {formatDate(parsedFeedback.submittedAt)}
             </span>
           </div>
 
           <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-emerald-100">
-            <StarRating value={ticket.feedback.stars} readOnly size="lg" />
+            <StarRating value={parsedFeedback.stars} readOnly size="lg" />
             <span className="font-bold text-neutral-800 text-sm">
-              {ticket.feedback.stars} / 5 Sao
+              {parsedFeedback.stars} / 5 Sao
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-            <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
-              <span className="text-neutral-500 block">Tốc độ xử lý:</span>
-              <span className="font-bold text-emerald-800">
-                {ticket.feedback.speedRating || '---'}
-              </span>
+          {(parsedFeedback.speedRating || parsedFeedback.attitudeRating || parsedFeedback.effectivenessRating) && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
+                <span className="text-neutral-500 block">Tốc độ xử lý:</span>
+                <span className="font-bold text-emerald-800">
+                  {parsedFeedback.speedRating || '---'}
+                </span>
+              </div>
+              <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
+                <span className="text-neutral-500 block">Thái độ phục vụ:</span>
+                <span className="font-bold text-emerald-800">
+                  {parsedFeedback.attitudeRating || '---'}
+                </span>
+              </div>
+              <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
+                <span className="text-neutral-500 block">Hiệu quả công việc:</span>
+                <span className="font-bold text-emerald-800">
+                  {parsedFeedback.effectivenessRating || '---'}
+                </span>
+              </div>
             </div>
-            <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
-              <span className="text-neutral-500 block">Thái độ phục vụ:</span>
-              <span className="font-bold text-emerald-800">
-                {ticket.feedback.attitudeRating || '---'}
-              </span>
-            </div>
-            <div className="bg-white p-2.5 rounded-xl border border-emerald-100">
-              <span className="text-neutral-500 block">Hiệu quả công việc:</span>
-              <span className="font-bold text-emerald-800">
-                {ticket.feedback.effectivenessRating || '---'}
-              </span>
-            </div>
-          </div>
+          )}
 
-          {ticket.feedback.comment && (
+          {parsedFeedback.comment && (
             <div className="bg-white p-3 rounded-xl border border-emerald-100 text-sm text-neutral-800 italic">
-              "{ticket.feedback.comment}"
+              "{parsedFeedback.comment}"
             </div>
           )}
         </div>
@@ -346,8 +402,17 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
         </div>
       ) : null}
 
-      {/* Footer Close */}
-      <div className="flex justify-end pt-2">
+      {/* Footer Close & Print */}
+      <div className="flex items-center justify-between pt-2">
+        <button
+          type="button"
+          onClick={() => setIsPrintOpen(true)}
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-red-50 text-[#B71C1C] border border-[#B71C1C]/40 font-bold text-xs transition-colors cursor-pointer"
+        >
+          <Printer className="w-4 h-4" />
+          <span>In phiếu kiểm tra</span>
+        </button>
+
         <button
           type="button"
           onClick={onClose}
@@ -356,6 +421,12 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
           Đóng cửa sổ
         </button>
       </div>
+
+      <TicketPrintModal
+        isOpen={isPrintOpen}
+        onClose={() => setIsPrintOpen(false)}
+        ticket={ticket}
+      />
     </div>
   );
 };

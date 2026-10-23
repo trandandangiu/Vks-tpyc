@@ -12,7 +12,7 @@ import { CustomerDashboard } from './pages/CustomerDashboard';
 import { TechnicalDashboard } from './pages/TechnicalDashboard';
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, role } = useAuth();
   const [currentPath, setCurrentPath] = useState<string>(() => {
     return window.location.pathname || '/';
   });
@@ -49,12 +49,12 @@ function AppContent() {
     return <Login onNavigate={navigate} />;
   }
 
-  // Without role barriers, any user can view any interface:
-  if (currentPath === '/customer') {
+  // Without role barriers, any user can view any interface, and '/' routes to role default:
+  if (currentPath === '/customer' || (currentPath === '/' && role === 'CUSTOMER')) {
     return <CustomerDashboard />;
   }
 
-  if (currentPath === '/technical') {
+  if (currentPath === '/technical' || (currentPath === '/' && role === 'TECHNICAL')) {
     return <TechnicalDashboard />;
   }
 

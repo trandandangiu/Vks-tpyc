@@ -50,9 +50,9 @@ export const AdminDashboard: React.FC = () => {
     try {
       const [t, u, d, a] = await Promise.all([
         apiClient.getTickets({ limit: 200 }),
-        apiClient.getUsers({ limit: 200 }),
-        apiClient.getDepartments(),
-        apiClient.getAuditLogs({ limit: 100 }),
+        apiClient.getUsers({ limit: 200 }).catch(() => []),
+        apiClient.getDepartments().catch(() => []),
+        apiClient.getAuditLogs({ limit: 100 }).catch(() => []),
       ]);
       setTickets(t);
       setUsers(u);
@@ -70,7 +70,7 @@ export const AdminDashboard: React.FC = () => {
   }, []);
 
   const newTicketsCount = tickets.filter((t) => t.status === 'NEW').length;
-  const allStaff = users.filter((u) => u.active);
+  const allStaff = users.filter((u) => u.active && u.role === 'TECHNICAL');
 
   const queueGroups = useMemo(() => {
     return [
@@ -129,7 +129,7 @@ export const AdminDashboard: React.FC = () => {
     setActiveTab(tab);
   };
 
-  const handleSaveProcess = (updates: {
+  const handleSaveProcess = async (updates: {
     status: TicketStatus;
     scheduledAt?: string;
     technicalNotes?: string;
@@ -138,17 +138,25 @@ export const AdminDashboard: React.FC = () => {
   }) => {
     if (!activeProcessTicket) return;
 
-    storageService.updateTicketProcess(
-      activeProcessTicket.id,
-      updates,
-      user?.fullName || 'Cán bộ xử lý'
-    );
-
-    toast.success(`Đã lưu tiến trình xử lý phiếu [${activeProcessTicket.code}]`);
-    loadData();
+    try {
+      const res = await apiClient.processTicket(activeProcessTicket.id, {
+        status: updates.status,
+        scheduledAt: updates.scheduledAt,
+        processNote: updates.technicalNotes,
+        supplies: updates.supplies,
+      });
+      if (res.success) {
+        toast.success(`Đã lưu tiến trình xử lý phiếu [${activeProcessTicket.code}]`);
+        loadData();
+      } else {
+        toast.error(res.message || 'Lỗi lưu tiến trình');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi kết nối');
+    }
   };
 
-  const handleCompleteProcess = (updates: {
+  const handleCompleteProcess = async (updates: {
     status: TicketStatus;
     scheduledAt?: string;
     technicalNotes?: string;
@@ -158,14 +166,22 @@ export const AdminDashboard: React.FC = () => {
   }) => {
     if (!activeProcessTicket) return;
 
-    storageService.updateTicketProcess(
-      activeProcessTicket.id,
-      updates,
-      user?.fullName || 'Cán bộ xử lý'
-    );
-
-    toast.success(`Phiếu [${activeProcessTicket.code}] đã hoàn thành thành công.`);
-    loadData();
+    try {
+      const res = await apiClient.processTicket(activeProcessTicket.id, {
+        status: 'DONE',
+        scheduledAt: updates.scheduledAt,
+        processNote: updates.technicalNotes,
+        supplies: updates.supplies,
+      });
+      if (res.success) {
+        toast.success(`Phiếu [${activeProcessTicket.code}] đã hoàn thành thành công.`);
+        loadData();
+      } else {
+        toast.error(res.message || 'Lỗi hoàn thành phiếu');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi kết nối');
+    }
   };
 
   const handleDeleteTicket = async (ticket: Ticket) => {

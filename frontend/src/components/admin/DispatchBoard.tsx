@@ -47,11 +47,13 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
 
     setIsAssigning(true);
     try {
-      const res = await apiClient.assignTicket(activeTicket.id, selectedTechId);
+      const scheduledIso = scheduledTime ? new Date(scheduledTime).toISOString() : undefined;
+      const res = await apiClient.assignTicket(activeTicket.id, selectedTechId, scheduledIso);
       if (res.success) {
         toast.success(`Đã phân công phiếu [${activeTicket.code}] cho ${tech.fullName}`);
         const remaining = newTickets.filter((t) => t.id !== activeTicket.id);
         setSelectedTicketId(remaining.length > 0 ? remaining[0].id : null);
+        setScheduledTime('');
         if (onDispatched) onDispatched();
       } else {
         toast.error(res.message || 'Lỗi điều phối');

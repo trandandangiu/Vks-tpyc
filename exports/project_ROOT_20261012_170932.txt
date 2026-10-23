@@ -1,13 +1,13 @@
 ╔══════════════════════════════════════════════════════════╗
 ║  DỰ ÁN: VKS-QLCV-v3 — ROOT
-║  Xuất ngày: 2026-10-11 12:50:42
+║  Xuất ngày: 2026-10-12 17:10:08
 ╚══════════════════════════════════════════════════════════╝
 
 ════════════════════════════════════════════════════════════
   CẤU TRÚC THƯ MỤC
 ════════════════════════════════════════════════════════════
 ├── .gitignore
-├── LOGO KHONG XOA .png
+├── LOGO KHONG XOA.ico.png
 ├── README.md
 ├── backend/
 │   ├── .env.example
@@ -95,7 +95,8 @@
 │   │   │       ├── TicketEditModal.tsx
 │   │   │       ├── TicketForm.tsx
 │   │   │       ├── TicketList.tsx
-│   │   │       └── TicketProcessForm.tsx
+│   │   │       ├── TicketProcessForm.tsx
+│   │   │       └── TicketWanForm.tsx
 │   │   ├── context/
 │   │   │   └── AuthContext.tsx
 │   │   ├── index.css
@@ -105,6 +106,8 @@
 │   │   │   ├── CustomerDashboard.tsx
 │   │   │   ├── Login.tsx
 │   │   │   └── TechnicalDashboard.tsx
+│   │   ├── public/
+│   │   │   └── icon.ico
 │   │   ├── services/
 │   │   │   ├── apiClient.ts
 │   │   │   ├── mockData.ts
@@ -113,6 +116,7 @@
 │   │       └── index.ts
 │   ├── tsconfig.json
 │   └── vite.config.ts
+├── icon.png
 └── init-db/
     └── 01-init.sql
 
@@ -617,4 +621,4 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ════════════════════════════════════════════════════════════
 
 Tổng số file đã export: 5
-Ngày xuất: 2026-10-11 12:50:47
+Ngày xuất: 2026-10-12 17:10:15

@@ -1,6 +1,6 @@
 ╔══════════════════════════════════════════════════════════╗
 ║  DỰ ÁN: VKS-QLCV-v3 — BE
-║  Xuất ngày: 2026-10-11 12:50:22
+║  Xuất ngày: 2026-10-12 17:09:34
 ╚══════════════════════════════════════════════════════════╝
 
 ════════════════════════════════════════════════════════════
@@ -1058,18 +1058,6 @@ export const ticketsController = {
       res.json({ success: true, message: 'Đã cập nhật xử lý', ticket });
     } catch (err) { next(err); }
   },
-  async assign(req, res, next) {
-    try {
-      const ticket = await ticketsService.assign(req.params.id, req.body, req.user);
-      res.json({ success: true, message: 'Đã điều phối phiếu', ticket });
-    } catch (err) { next(err); }
-  },
-  async process(req, res, next) {
-    try {
-      const ticket = await ticketsService.process(req.params.id, req.body, req.user);
-      res.json({ success: true, message: 'Đã cập nhật xử lý', ticket });
-    } catch (err) { next(err); }
-  },
   async evaluate(req, res, next) {
     try {
       const ticket = await ticketsService.evaluate(req.params.id, req.body, req.user);
@@ -1242,13 +1230,10 @@ router.get(
   attachmentsController.list
 );
 
-// Download — cho phép dùng ?token= cho lightbox/tab mới
+
 router.get(
   '/attachments/:id/download',
-  (req, res, next) => {
-    if (req.query.token) return authenticate(req, res, next);
-    return authenticate(req, res, next);
-  },
+  authenticate, // <-- Chỉ cần gọi một lần
   attachmentsController.download
 );
 
@@ -1759,7 +1744,7 @@ export const departmentsService = {
   },
 
   async create(data, currentUser) {
-    const { code, name } = data;
+    const { code, name, description } = data; // <-- Thêm description vào đây
     if (!code || !name) throw { status: 400, message: 'Thiếu mã hoặc tên phòng' };
 
     const existing = await prisma.department.findUnique({ where: { code: code.trim().toUpperCase() } });
@@ -1776,7 +1761,7 @@ export const departmentsService = {
       action: 'CREATE_DEPARTMENT',
       entityType: 'DEPARTMENT',
       entityId: dept.id,
-      newValue: { code, name },
+      newValue: { code, name, description },
       level: 'INFO',
     });
 
@@ -1789,6 +1774,7 @@ export const departmentsService = {
 
     const updateData = {};
     if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.description !== undefined) updateData.description = data.description?.trim() || null;   // ✅ thêm
     if (data.active !== undefined) updateData.active = data.active;
 
     const dept = await prisma.department.update({ where: { id }, data: updateData });
@@ -2636,4 +2622,4 @@ export const usersService = {
 ════════════════════════════════════════════════════════════
 
 Tổng số file đã export: 35
-Ngày xuất: 2026-10-11 12:50:28
+Ngày xuất: 2026-10-12 17:09:46

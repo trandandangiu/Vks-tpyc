@@ -51,8 +51,19 @@ export const TechnicalKpiModal: React.FC<TechnicalKpiModalProps> = ({
         ).toFixed(1)
       : '5.0';
 
-  // Average completion time (estimate: ~2.5 hours)
-  const avgHours = '2.4 giờ';
+  // Average completion time (computed from completedAt and dispatchedAt/createdAt)
+  const avgHours = useMemo(() => {
+    const doneWithTime = myTickets.filter((t) => t.status === 'DONE' && t.completedAt);
+    if (doneWithTime.length === 0) return '---';
+    const totalMs = doneWithTime.reduce((sum, t) => {
+      const start = new Date(t.dispatchedAt || t.createdAt).getTime();
+      const end = new Date(t.completedAt!).getTime();
+      const diff = Math.max(0, end - start);
+      return sum + diff;
+    }, 0);
+    const hours = totalMs / doneWithTime.length / (1000 * 60 * 60);
+    return `${Math.max(0.1, Math.round(hours * 10) / 10)} giờ`;
+  }, [myTickets]);
 
   // 2. BarChart 7 days
   const last7DaysData = useMemo(() => {
