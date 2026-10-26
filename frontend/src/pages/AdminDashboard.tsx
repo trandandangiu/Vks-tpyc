@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { storageService } from '../services/storage';
 import { apiClient } from '../services/apiClient';
 import { Ticket, User, Department, AuditLog, TicketStatus, SupplyItem } from '../types';
 import { Header } from '../components/common/Header';
@@ -10,6 +9,7 @@ import { TicketList } from '../components/tickets/TicketList'; // ✅ THÊM DÒN
 import { DispatchBoard } from '../components/admin/DispatchBoard';
 import { UserManager } from '../components/admin/UserManager';
 import { DeptManager } from '../components/admin/DeptManager';
+import { IncidentManager } from '../components/admin/IncidentManager';
 import { AuditLogTable } from '../components/admin/AuditLogTable';
 import { TicketDetail } from '../components/tickets/TicketDetail';
 import { TicketProcessForm } from '../components/tickets/TicketProcessForm';
@@ -266,7 +266,7 @@ export const AdminDashboard: React.FC = () => {
                     ? 'Phiếu đang xử lý'
                     : ticketListFilter === 'DONE'
                       ? 'Phiếu đã hoàn thành'
-                      : 'Phiếu yêu cầu kỹ thuật toàn thành phố'
+                      : 'Phiếu yêu cầu kỹ thuật '
                 }
                 showFilters={true}
                 initialStatusFilter={ticketListFilter}
@@ -387,7 +387,7 @@ export const AdminDashboard: React.FC = () => {
                               <UserIcon className="w-3.5 h-3.5" /> Người gửi yêu cầu:
                             </span>
                             <span className="font-semibold text-neutral-800">
-                              {activeProcessTicket.creatorName} ({activeProcessTicket.creatorPosition})
+                              {activeProcessTicket.creatorName}
                             </span>
                           </div>
 
@@ -435,6 +435,10 @@ export const AdminDashboard: React.FC = () => {
                   )}
                 </div>
               </div>
+            )}
+
+            {activeTab === 'incidents' && (
+              <IncidentManager />
             )}
 
             {activeTab === 'users' && (

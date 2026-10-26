@@ -1,0 +1,24 @@
+{
+  "name": "Hệ Thống Phiếu Yêu Cầu Kỹ Thuật - VKSND TP.HCM",
+  "short_name": "Phiếu Kỹ Thuật VKS",
+  "description": "Hệ thống quản lý, tiếp nhận và điều phối phiếu yêu cầu kỹ thuật công nghệ thông tin - Bộ phận Chuyển đổi số.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F0",
+  "theme_color": "#B71C1C",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

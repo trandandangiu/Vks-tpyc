@@ -53,7 +53,7 @@ export interface Ticket {
   creatorId: string;
   creatorName: string;
   creatorPhone: string;
-  creatorPosition: string;
+  creatorPosition?: string;
   departmentId: string;
   departmentName: string;
   assigneeId?: string;
@@ -175,3 +175,74 @@ export const CREATOR_POSITIONS = [
   'Chuyên viên',
   'Khác',
 ];
+
+export type IncidentNetworkType = 'LAN' | 'WAN' | 'ALL';
+
+export interface IncidentTemplate {
+  id: string;
+  title: string;
+  category: string;
+  networkType: IncidentNetworkType;
+  defaultPriority: TicketPriority;
+  descriptionHint?: string;
+  sortOrder?: number;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AppNotification {
+  id: string;
+  userId?: string;
+  type: string;
+  title: string;
+  content: string;
+  ticketId?: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export type DeviceIpCategory = 'Máy QLAHS' | 'Máy in Internet' | 'Máy tính Internet' | string;
+
+export interface DeviceIpRecord {
+  id: string;
+  unitAndDevice: string;
+  ipAddress: string;
+  deviceCategory: DeviceIpCategory;
+  note?: string;
+  updatedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ChatRoom {
+  ticketId: string;
+  ticketCode: string;
+  ticketTitle: string;
+  ticketStatus: TicketStatus;
+  ticketPriority: TicketPriority;
+  departmentName: string;
+  partnerId: string;
+  partnerName: string;
+  partnerRole: 'CUSTOMER' | 'TECHNICAL';
+  partnerPhone?: string | null;
+  unreadCount: number;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
+  expiresAt?: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  ticketId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  recipientId: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  expiresAt: string;
+  ticketCode?: string;
+  ticketTitle?: string;
+}

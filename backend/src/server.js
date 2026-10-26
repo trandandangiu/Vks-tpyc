@@ -11,6 +11,10 @@ import ticketsRoutes from './routes/tickets.routes.js';
 import attachmentsRoutes from './routes/attachments.routes.js';
 import auditLogsRoutes from './routes/auditLogs.routes.js';
 import sseRoutes from './routes/sse.routes.js';
+import incidentTemplatesRoutes from './routes/incidentTemplates.routes.js';
+import notificationsRoutes from './routes/notifications.routes.js';
+import deviceIpsRoutes from './routes/deviceIps.routes.js';
+import chatRoutes from './routes/chat.routes.js';
 
 import { errorHandler, notFound } from './middlewares/error.js';
 
@@ -59,6 +63,10 @@ app.use('/api/tickets', ticketsRoutes);
 app.use('/api', attachmentsRoutes);
 app.use('/api/audit-logs', auditLogsRoutes);
 app.use('/api/sse', sseRoutes);
+app.use('/api/incident-templates', incidentTemplatesRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/device-ips', deviceIpsRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Errors
 app.use(notFound);

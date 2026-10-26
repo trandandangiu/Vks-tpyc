@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../services/apiClient';
 import { useToast } from '../common/Toast';
-import { TicketPriority, INCIDENT_CATEGORIES } from '../../types';
+import { TicketPriority, INCIDENT_CATEGORIES, IncidentTemplate } from '../../types';
 import {
   Send,
   Upload,
@@ -14,6 +14,10 @@ import {
   Globe,
   Network,
   CheckCircle2,
+  Plus,
+  Trash2,
+  Sparkles,
+  Camera,
 } from 'lucide-react';
 import { TicketWanForm } from './TicketWanForm';
 
@@ -26,28 +30,11 @@ type NetworkType = 'WAN' | 'LAN';
 const FORM_WRAPPER =
   'bg-white rounded-2xl p-6 sm:p-8 border border-neutral-200/90 shadow-sm max-w-4xl mx-auto space-y-6';
 
-/**
- * Danh sách tiêu đề gợi ý — "custom sort" ra để tick chọn.
- * Admin có thể tự nhập tay, user thường chỉ được tick chọn trong list này.
- */
-const TITLE_PRESETS: string[] = [
-  'Không kết nối được mạng LAN',
-  'Máy in không hoạt động',
-  'Máy tính khởi động chậm / treo',
-  'Không truy cập được Internet',
-  'Lỗi phần mềm nghiệp vụ',
-  'Email không gửi / nhận được',
-  'Ổ cứng đầy / báo lỗi bộ nhớ',
-  'Thiết bị ngoại vi không nhận',
-  'Khác (mô tả chi tiết bên dưới)',
-];
-
 export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
   const { user } = useAuth();
   const toast = useToast();
 
   // ====== PHÂN QUYỀN ADMIN ======
-  // Tùy hệ thống của bạn, có thể là user?.role === 'ADMIN' | 'admin' | user?.isAdmin
   const isAdmin =
     user?.role === 'ADMIN' ||
     (user as any)?.isAdmin === true ||
@@ -55,12 +42,80 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
 
   const [networkType, setNetworkType] = useState<NetworkType>('WAN');
 
+  // ====== DANH SÁCH SỰ CỐ THƯỜNG GẶP TỪ DATABASE (LIÊN KẾT 100% VỚI DANH MỤC SỰ CỐ) ======
+  const [incidentTemplates, setIncidentTemplates] = useState<IncidentTemplate[]>([]);
+  const [selectedHint, setSelectedHint] = useState<string>('');
+  const [newPresetTitle, setNewPresetTitle] = useState('');
+  const [isAddingPreset, setIsAddingPreset] = useState(false);
+
+  const loadIncidentPresets = async () => {
+    try {
+      const list = await apiClient.getIncidentTemplates({
+        networkType: 'LAN',
+        activeOnly: true,
+      });
+      setIncidentTemplates(Array.isArray(list) ? list : []);
+    } catch {
+      setIncidentTemplates([]);
+    }
+  };
+
+  useEffect(() => {
+    if (networkType === 'LAN') {
+      loadIncidentPresets();
+    }
+  }, [networkType]);
+
+  const handleSelectPreset = (item: IncidentTemplate) => {
+    setTicketTitle(item.title);
+    if (item.category) setCategory(item.category);
+    if (item.defaultPriority) setPriority(item.defaultPriority);
+    setSelectedHint(item.descriptionHint || '');
+  };
+
+  const handleQuickAddPreset = async () => {
+    if (!newPresetTitle.trim()) {
+      toast.warning('Vui lòng nhập tên sự cố mẫu cần thêm');
+      return;
+    }
+    try {
+      const res = await apiClient.createIncidentTemplate({
+        title: newPresetTitle.trim(),
+        category: 'Khác',
+        networkType: 'LAN',
+        defaultPriority: priority,
+        active: true,
+      });
+      if (res.success) {
+        toast.success(`Đã thêm sự cố "${newPresetTitle.trim()}" vào Danh mục sự cố`);
+        setNewPresetTitle('');
+        setIsAddingPreset(false);
+        loadIncidentPresets();
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi thêm sự cố mẫu');
+    }
+  };
+
+  const handleQuickDeletePreset = async (e: React.MouseEvent, item: IncidentTemplate) => {
+    e.stopPropagation();
+    if (!confirm(`Xóa vĩnh viễn sự cố "${item.title}" khỏi Danh mục sự cố?`)) return;
+    try {
+      const res = await apiClient.deleteIncidentTemplate(item.id);
+      if (res.success) {
+        toast.success('Đã xóa sự cố khỏi Danh mục sự cố');
+        if (ticketTitle === item.title) setTicketTitle('');
+        loadIncidentPresets();
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi xóa sự cố mẫu');
+    }
+  };
+
   // ====== STATE CHUNG CHO FORM LAN ======
   const [ticketTitle, setTicketTitle] = useState('');      // tiêu đề sự cố (admin nhập / user tick)
   const [creatorName, setCreatorName] = useState(user?.fullName || '');
   const [creatorPhone, setCreatorPhone] = useState(user?.phone || '');
-  const [creatorPosition, setCreatorPosition] = useState('');
-  const [creatorTitle, setCreatorTitle] = useState('');
   const [category, setCategory] = useState(INCIDENT_CATEGORIES[0]);
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TicketPriority>('NORMAL');
@@ -73,6 +128,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     processFiles(Array.from(e.target.files));
+    e.target.value = '';
   };
 
   const processFiles = (files: File[]) => {
@@ -123,22 +179,16 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
       toast.error('Vui lòng nhập mô tả sự cố!');
       return;
     }
-    if (!creatorPosition.trim()) {
-      toast.error('Vui lòng nhập vị trí công tác!');
-      return;
-    }
 
     setIsSubmitting(true);
     try {
       const res = await apiClient.createTicket({
-        // Nếu admin nhập tự do → dùng luôn; nếu không → prefix [INTERNET]
         title: isAdmin ? ticketTitle.trim() : `[INTERNET] ${ticketTitle.trim()}`,
         description: description.trim(),
         category,
         priority,
         creatorName: creatorName.trim() || user?.fullName || 'Khách hàng',
         creatorPhone: creatorPhone.trim(),
-        creatorPosition: [creatorPosition.trim(), creatorTitle.trim()].filter(Boolean).join(' - '),
         supplies: [],
       });
 
@@ -191,11 +241,11 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
               Tạo phiếu yêu cầu hỗ trợ kỹ thuật
             </h2>
             <p className="text-xs text-neutral-500 mt-1">
-              Điền đầy đủ thông tin để Bộ phận "Công nghệ thông tin - chuyển đổi số" tiếp nhận và xử lý nhanh chóng.
+              Điền đầy đủ thông tin để Bộ phận "Công nghệ thông tin - Chuyển đổi số" tiếp nhận và xử lý nhanh chóng.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-[#B71C1C]" /> Đơn vị
@@ -221,37 +271,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
                 className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-neutral-800 text-sm font-medium"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-                <Briefcase className="w-3.5 h-3.5 text-neutral-500" /> Vị trí{' '}
-                <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={creatorPosition}
-                onChange={(e) => setCreatorPosition(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-                <Briefcase className="w-3.5 h-3.5 text-neutral-500" /> Chức vụ
-              </label>
-              <input
-                type="text"
-                value={creatorTitle}
-                onChange={(e) => setCreatorTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-neutral-500" /> SĐT liên hệ
@@ -265,54 +285,103 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
             </div>
           </div>
 
-          {/* ============ TIÊU ĐỀ SỰ CỐ ============ */}
-          <div>
-            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-              Tiêu đề sự cố <span className="text-red-500">*</span>
-              {isAdmin && (
-                <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-amber-100 text-amber-700 font-bold normal-case">
-                  Admin
-                </span>
-              )}
-            </label>
+          {/* ============ SỰ CỐ THƯỜNG GẶP & TIÊU ĐỀ SỰ CỐ ============ */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-bold text-neutral-700 uppercase flex items-center gap-1.5">
+                Sự cố thường gặp  <span className="text-red-500">*</span>
+                {isAdmin && (
+                  <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-amber-100 text-amber-700 font-bold normal-case">
+                    
+                  </span>
+                )}
+              </label>
 
-            {isAdmin ? (
-              // ADMIN: nhập tự do
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingPreset((v) => !v)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-[#B71C1C] text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{isAddingPreset ? 'Đóng' : 'Thêm sự cố mẫu'}</span>
+                </button>
+              )}
+            </div>
+
+            {isAdmin && isAddingPreset && (
+              <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={newPresetTitle}
+                  onChange={(e) => setNewPresetTitle(e.target.value)}
+                  placeholder="Nhập lỗi máy móc/thiết bị mới để User chọn nhanh..."
+                  className="flex-1 px-3 py-2 bg-white border border-amber-300 rounded-lg text-xs font-medium text-neutral-800 outline-none focus:border-[#B71C1C]"
+                />
+                <button
+                  type="button"
+                  onClick={handleQuickAddPreset}
+                  className="px-4 py-2 rounded-lg bg-[#B71C1C] hover:bg-[#8E1515] text-white text-xs font-bold cursor-pointer shrink-0"
+                >
+                  Lưu vào danh sách
+                </button>
+              </div>
+            )}
+
+            {incidentTemplates.length === 0 ? (
+              <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200 text-xs text-neutral-500 text-center">
+                Chưa có sự cố thường gặp nào trong danh mục. Vui lòng nhập tiêu đề sự cố bên dưới{isAdmin ? ' hoặc bấm "Thêm sự cố mẫu"' : ''}.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {incidentTemplates.map((item) => {
+                  const active = ticketTitle === item.title;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectPreset(item)}
+                      className={`group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-left text-sm transition-all cursor-pointer ${
+                        active
+                          ? 'border-[#B71C1C] bg-red-50/60 text-[#B71C1C] font-semibold shadow-2xs'
+                          : 'border-neutral-200 bg-white text-neutral-700 hover:border-[#B71C1C]/40'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <CheckCircle2
+                          className={`w-4 h-4 shrink-0 ${
+                            active ? 'text-[#B71C1C]' : 'text-neutral-300'
+                          }`}
+                        />
+                        <span className="leading-tight truncate">{item.title}</span>
+                      </div>
+
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleQuickDeletePreset(e, item)}
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer shrink-0"
+                          title="Xóa sự cố mẫu này khỏi Danh mục sự cố"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Cho phép nhập/chỉnh sửa tiêu đề cụ thể nếu cần */}
+            <div>
               <input
                 type="text"
                 required
                 value={ticketTitle}
                 onChange={(e) => setTicketTitle(e.target.value)}
-                placeholder="Nhập tiêu đề sự cố..."
+                placeholder="Chọn một sự cố phía trên hoặc nhập tiêu đề sự cố cụ thể tại đây..."
                 className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
               />
-            ) : (
-              // USER: tick chọn từ danh sách gợi ý (custom sort)
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {TITLE_PRESETS.map((t) => {
-                  const active = ticketTitle === t;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTicketTitle(t)}
-                      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left text-sm transition-all cursor-pointer ${
-                        active
-                          ? 'border-[#B71C1C] bg-red-50/60 text-[#B71C1C] font-semibold'
-                          : 'border-neutral-200 bg-white text-neutral-700 hover:border-[#B71C1C]/40'
-                      }`}
-                    >
-                      <CheckCircle2
-                        className={`w-4 h-4 flex-shrink-0 ${
-                          active ? 'text-[#B71C1C]' : 'text-neutral-300'
-                        }`}
-                      />
-                      <span className="leading-tight">{t}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            </div>
           </div>
 
           <div>
@@ -344,18 +413,28 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
             <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
               Mô tả sự cố <span className="text-red-500">*</span>
             </label>
+            {selectedHint && (
+              <div className="mb-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>Gợi ý: {selectedHint}</span>
+              </div>
+            )}
             <textarea
               required
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              placeholder={
+                selectedHint ||
+                'Mô tả chi tiết tình trạng lỗi, số phòng hoặc tên thiết bị để kỹ thuật viên chuẩn bị dụng cụ...'
+              }
               className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm"
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5">
-              Đính kèm ảnh hiện trạng
+              Đính kèm ảnh hiện trạng (Hỗ trợ chụp trực tiếp trên điện thoại)
             </label>
             <div
               onDragOver={handleDragOver}
@@ -367,11 +446,22 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
                   : 'border-neutral-300 hover:border-[#B71C1C]/50 bg-neutral-50/50'
               }`}
             >
-              <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-              <p className="text-xs text-neutral-600 font-medium">
-                Kéo thả ảnh hoặc{' '}
-                <label className="text-[#B71C1C] font-bold hover:underline cursor-pointer">
-                  chọn từ máy
+              <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
+                <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#B71C1C] hover:bg-[#8E1515] text-white text-xs font-bold shadow-xs cursor-pointer transition-all">
+                  <Camera className="w-4 h-4 text-[#FFD700]" />
+                  <span>Chụp ảnh </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+
+                <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-300 text-xs font-bold cursor-pointer transition-all">
+                  <Upload className="w-4 h-4 text-[#B71C1C]" />
+                  <span>Chọn ảnh</span>
                   <input
                     type="file"
                     multiple
@@ -380,6 +470,9 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
                     className="hidden"
                   />
                 </label>
+              </div>
+              <p className="text-[11px] text-neutral-500">
+               
               </p>
             </div>
 

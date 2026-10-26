@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut } from 'lucide-react';
 import logoUrl from '../../public/icon.ico';
+import { NotificationCenter } from './NotificationCenter';
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -63,14 +64,16 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* ═══ RIGHT: Action + User ═══ */}
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+          {/* ═══ RIGHT: Action + Notifications + User ═══ */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {rightAction}
 
+            {user && <NotificationCenter />}
+
             {user && (
-              <div className="flex items-center gap-3 pl-2 sm:pl-4 sm:border-l sm:border-white/20">
+              <div className="flex items-center gap-2.5 pl-2 sm:pl-3 sm:border-l sm:border-white/20">
                 <div className="hidden sm:flex flex-col items-end text-right min-w-0">
-                  <span className="text-sm font-bold text-white truncate max-w-[200px]">
+                  <span className="text-sm font-bold text-white truncate max-w-[180px]">
                     {user.fullName}
                   </span>
                 </div>

@@ -8,6 +8,7 @@ import { TicketCard } from '../components/tickets/TicketCard';
 import { TicketDetail } from '../components/tickets/TicketDetail';
 import { RatingModal } from '../components/tickets/RatingModal';
 import { Modal } from '../components/common/Modal';
+import { TicketChatWidget } from '../components/chat/TicketChatWidget';
 import { PlusCircle, Layers, Inbox } from 'lucide-react';
 
 export const CustomerDashboard: React.FC = () => {
@@ -57,7 +58,7 @@ export const CustomerDashboard: React.FC = () => {
               }`}
             >
               <Layers className="w-4 h-4" />
-              <span>Phiếu của tôi ({tickets.length})</span>
+              <span>Phiếu yêu cầu  ({tickets.length})</span>
             </button>
 
             <button
@@ -109,6 +110,9 @@ export const CustomerDashboard: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Cửa sổ Trò chuyện bảo mật 24h liên thông Customer <-> Technical */}
+      <TicketChatWidget />
 
       <Modal
         isOpen={!!selectedTicketForDetail}

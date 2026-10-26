@@ -8,11 +8,22 @@ import {
   SupplyItem,
   RatingFeedback,
   TicketPriority,
+  IncidentTemplate,
+  AppNotification,
+  DeviceIpRecord,
+  ChatRoom,
+  ChatMessage,
 } from '../types';
 
 const API_BASE = '/api';
 const TOKEN_KEY = 'ptcv_token';
-const USER_KEY = 'ptcv_user';
+
+// Xóa toàn bộ bộ nhớ tạm cũ (nếu có từ phiên bản trước) để đảm bảo dùng 100% Database
+try {
+  ['ptcv_user', 'cds_tickets_v2', 'cds_users_v2', 'cds_depts_v2', 'cds_audit_v2'].forEach((k) =>
+    localStorage.removeItem(k)
+  );
+} catch { /* ignore */ }
 
 // ============================================
 // REQUEST CORE
@@ -37,7 +48,6 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     if (res.status === 401) {
       localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
     }
     const message =
       (typeof body === 'object' && body?.message) ||
@@ -60,7 +70,6 @@ export const apiClient = {
   setToken: (t: string) => localStorage.setItem(TOKEN_KEY, t),
   clearToken: () => {
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
   },
 
   // ---------- AUTH ----------
@@ -75,7 +84,6 @@ export const apiClient = {
     });
     if (data.success && data.token) {
       localStorage.setItem(TOKEN_KEY, data.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
     }
     return data;
   },
@@ -91,10 +99,7 @@ export const apiClient = {
   },
 
   getCurrentUser(): User | null {
-    try {
-      const raw = localStorage.getItem(USER_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
+    return null;
   },
 
   // ---------- USERS ----------
@@ -331,5 +336,162 @@ export const apiClient = {
       `/audit-logs?${q.toString()}`
     );
     return data.logs || [];
+  },
+
+  // ---------- INCIDENT TEMPLATES (SỰ CỐ THƯỜNG GẶP) ----------
+  async getIncidentTemplates(params?: {
+    networkType?: string;
+    category?: string;
+    activeOnly?: boolean;
+  }) {
+    const q = new URLSearchParams();
+    if (params?.networkType) q.set('networkType', params.networkType);
+    if (params?.category) q.set('category', params.category);
+    if (params?.activeOnly !== undefined) q.set('activeOnly', String(params.activeOnly));
+    const data = await request<{ success: boolean; templates: IncidentTemplate[] }>(
+      `/incident-templates?${q.toString()}`
+    );
+    return data.templates || [];
+  },
+
+  async createIncidentTemplate(payload: Partial<IncidentTemplate>) {
+    return request<{ success: boolean; template: IncidentTemplate; message?: string }>(
+      '/incident-templates',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+  },
+
+  async updateIncidentTemplate(id: string, payload: Partial<IncidentTemplate>) {
+    return request<{ success: boolean; template: IncidentTemplate; message?: string }>(
+      `/incident-templates/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      }
+    );
+  },
+
+  async deleteIncidentTemplate(id: string) {
+    return request<{ success: boolean; message?: string }>(
+      `/incident-templates/${id}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  },
+
+  // ---------- NOTIFICATIONS (THÔNG BÁO) ----------
+  async getNotifications(limit = 50) {
+    const data = await request<{
+      success: boolean;
+      notifications: AppNotification[];
+      unreadCount: number;
+    }>(`/notifications?limit=${limit}`);
+    return {
+      notifications: data.notifications || [],
+      unreadCount: data.unreadCount || 0,
+    };
+  },
+
+  async markNotificationRead(id: string) {
+    return request<{ success: boolean }>(`/notifications/${id}/read`, {
+      method: 'PATCH',
+    });
+  },
+
+  async markAllNotificationsRead() {
+    return request<{ success: boolean }>('/notifications/read-all', {
+      method: 'PATCH',
+    });
+  },
+
+  async deleteNotification(id: string) {
+    return request<{ success: boolean }>(`/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async clearAllNotifications() {
+    return request<{ success: boolean }>('/notifications', {
+      method: 'DELETE',
+    });
+  },
+
+  // ---------- DEVICE IP RECORDS (DỮ LIỆU MÁY IN / MÁY TÍNH & MÃ IP) ----------
+  async getDeviceIps(params?: { search?: string; deviceCategory?: string }) {
+    const q = new URLSearchParams();
+    if (params?.search) q.set('search', params.search);
+    if (params?.deviceCategory) q.set('deviceCategory', params.deviceCategory);
+    const data = await request<{ success: boolean; records: DeviceIpRecord[] }>(
+      `/device-ips?${q.toString()}`
+    );
+    return data.records || [];
+  },
+
+  async createDeviceIp(payload: Partial<DeviceIpRecord>) {
+    return request<{ success: boolean; record: DeviceIpRecord; message?: string }>(
+      '/device-ips',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+  },
+
+  async updateDeviceIp(id: string, payload: Partial<DeviceIpRecord>) {
+    return request<{ success: boolean; record: DeviceIpRecord; message?: string }>(
+      `/device-ips/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      }
+    );
+  },
+
+  async deleteDeviceIp(id: string) {
+    return request<{ success: boolean; message?: string }>(`/device-ips/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // ---------- CHAT 24H BẢO MẬT (TECHNICAL <-> CUSTOMER) ----------
+  async getChatRooms() {
+    const data = await request<{ success: boolean; rooms: ChatRoom[] }>('/chat/rooms');
+    return data.rooms || [];
+  },
+
+  async getChatMessages(ticketId: string) {
+    const data = await request<{
+      success: boolean;
+      ticket: any;
+      messages: ChatMessage[];
+    }>(`/chat/rooms/${ticketId}/messages`);
+    return {
+      ticket: data.ticket,
+      messages: data.messages || [],
+    };
+  },
+
+  async sendChatMessage(ticketId: string, content: string) {
+    const data = await request<{ success: boolean; message: ChatMessage }>(
+      `/chat/rooms/${ticketId}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      }
+    );
+    return data.message;
+  },
+
+  async clearChatMessages(ticketId: string) {
+    return request<{ success: boolean; message?: string }>(
+      `/chat/rooms/${ticketId}/messages`,
+      {
+        method: 'DELETE',
+      }
+    );
   },
 };

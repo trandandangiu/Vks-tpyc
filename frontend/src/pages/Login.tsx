@@ -1,7 +1,7 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/common/Toast';
-import { Shield, Eye, EyeOff, Lock, User, LogIn, Sparkles, Building2, Laptop } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, LogIn } from 'lucide-react';
 import { VksLogo } from '../components/common/VksLogo';
 import { LoginBackground } from '../components/common/LoginBackground';
 
@@ -43,12 +43,6 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleQuickFill = (demoUser: string, demoPass: string) => {
-    setUsername(demoUser);
-    setPassword(demoPass);
-    toast.info(`Đã điền tài khoản mẫu [${demoUser}]`);
-  };
-
   return (
     <div className="min-h-screen relative flex flex-col items-center justify-center p-4 selection:bg-red-200">
       <LoginBackground />
@@ -70,7 +64,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
             </p>
           </div>
 
-          <form onSubmit={handleLoginSubmit} className="p-6 sm:p-8 space-y-4">
+          <form onSubmit={handleLoginSubmit} className="p-6 sm:p-8 space-y-5">
             <div>
               <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
                 Tên đăng nhập
@@ -83,7 +77,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Nhập tên đăng nhập..."
-                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-neutral-50/70 border border-neutral-300 focus:border-[#B71C1C] focus:bg-white focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl transition-all font-medium text-neutral-900"
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-neutral-50/70 border border-neutral-300 focus:border-[#B71C1C] focus:bg-white focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl transition-all font-medium text-neutral-900 outline-none"
                 />
               </div>
             </div>
@@ -100,7 +94,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Nhập mật khẩu..."
-                  className="w-full pl-10 pr-10 py-2.5 text-sm bg-neutral-50/70 border border-neutral-300 focus:border-[#B71C1C] focus:bg-white focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl transition-all font-medium text-neutral-900"
+                  className="w-full pl-10 pr-10 py-2.5 text-sm bg-neutral-50/70 border border-neutral-300 focus:border-[#B71C1C] focus:bg-white focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl transition-all font-medium text-neutral-900 outline-none"
                 />
                 <button
                   type="button"
@@ -122,57 +116,6 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
               <span>{isLoading ? 'ĐANG ĐĂNG NHẬP...' : 'ĐĂNG NHẬP'}</span>
             </button>
           </form>
-
-          <div className="p-6 bg-neutral-50/70 border-t border-neutral-100 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Tài khoản dùng thử nhanh (1-Click Demo):</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('admin', 'admin123')}
-                className="p-2.5 rounded-xl border border-red-200 bg-red-50/60 hover:bg-red-100 text-left transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#B71C1C]">
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Admin</span>
-                </div>
-                <div className="text-[11px] font-mono text-neutral-600 mt-0.5 truncate">
-                  admin / admin123
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('customer', 'customer123')}
-                className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 hover:bg-emerald-100 text-left transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>Khách hàng</span>
-                </div>
-                <div className="text-[11px] font-mono text-neutral-600 mt-0.5 truncate">
-                  customer / customer123
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('technical', 'technical123')}
-                className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-left transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-800">
-                  <Laptop className="w-3.5 h-3.5" />
-                  <span>Kỹ thuật viên</span>
-                </div>
-                <div className="text-[11px] font-mono text-neutral-600 mt-0.5 truncate">
-                  technical / technical123
-                </div>
-              </button>
-            </div>
-          </div>
         </div>
 
         <p className="text-center text-xs text-neutral-500 mt-4">

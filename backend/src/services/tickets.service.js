@@ -297,14 +297,30 @@ export const ticketsService = {
         ASSIGNED: 'đã được điều phối',
       }[status] || status;
 
+      // Thông báo cho User tạo phiếu
       notifyRealtime([ticket.creatorId], {
         type: 'TICKET_STATUS',
         title: `📢 Phiếu ${ticket.code} ${statusLabel}`,
         content: status === 'DONE'
-          ? 'Vui lòng vào đánh giá chất lượng dịch vụ!'
-          : 'Kỹ thuật viên đã cập nhật trạng thái',
+          ? `Phiếu "${ticket.title}" đã hoàn thành. Vui lòng đánh giá chất lượng xử lý!`
+          : `Kỹ thuật viên ${currentUser.fullName} đã cập nhật: ${statusLabel}`,
         ticketId: id,
       });
+
+      // Thông báo cho các Admin biết tiến độ kỹ thuật viên xử lý
+      const admins = await prisma.user.findMany({
+        where: { role: 'ADMIN', active: true },
+        select: { id: true },
+      });
+      const adminIds = admins.map((a) => a.id).filter((aid) => aid !== currentUser.id);
+      if (adminIds.length > 0) {
+        notifyRealtime(adminIds, {
+          type: 'TICKET_STATUS',
+          title: `🔧 Cập nhật phiếu ${ticket.code}`,
+          content: `${currentUser.fullName} chuyển trạng thái sang "${statusLabel}"`,
+          ticketId: id,
+        });
+      }
     }
 
     return updated;
@@ -345,6 +361,22 @@ export const ticketsService = {
       entityId: id,
       newValue: { rating, feedback },
       level: 'INFO',
+    });
+
+    // Thông báo cho Admin và Kỹ thuật viên phụ trách khi User đánh giá phiếu
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN', active: true },
+      select: { id: true },
+    });
+    const targetIds = new Set(admins.map((a) => a.id));
+    if (ticket.assigneeId) targetIds.add(ticket.assigneeId);
+    targetIds.delete(currentUser.id);
+
+    notifyRealtime([...targetIds], {
+      type: 'TICKET_RATED',
+      title: `⭐ Đánh giá ${rating} sao cho phiếu ${ticket.code}`,
+      content: `${currentUser.fullName} vừa đánh giá phiếu "${ticket.title}"`,
+      ticketId: id,
     });
 
     return updated;

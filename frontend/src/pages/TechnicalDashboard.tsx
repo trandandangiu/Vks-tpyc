@@ -7,6 +7,8 @@ import { StatusBadge, PriorityBadge } from '../components/common/StatusBadge';
 import { TicketProcessForm } from '../components/tickets/TicketProcessForm';
 import { TicketPrintModal } from '../components/tickets/TicketPrintModal';
 import { TechnicalKpiModal } from '../components/technical/TechnicalKpiModal';
+import { DeviceIpManager } from '../components/technical/DeviceIpManager';
+import { TicketChatWidget } from '../components/chat/TicketChatWidget';
 import { useToast } from '../components/common/Toast';
 import logoUrl from '../public/icon.ico';
 import {
@@ -26,9 +28,11 @@ import {
   Search,
   Clock,
   Tag,
+  Network,
+  MessageSquare,
 } from 'lucide-react';
 
-type TechTab = 'pending' | 'done' | 'all' | 'blank-sticker';
+type TechTab = 'pending' | 'done' | 'all' | 'device-ips' | 'blank-sticker';
 
 export const TechnicalDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -248,6 +252,11 @@ export const TechnicalDashboard: React.FC = () => {
       icon: ListTodo,
     },
     {
+      id: 'device-ips',
+      label: 'Dữ liệu Máy & Mã IP',
+      icon: Network,
+    },
+    {
       id: 'blank-sticker',
       label: 'In tem kiểm tra nhanh',
       icon: Tag,
@@ -408,14 +417,31 @@ export const TechnicalDashboard: React.FC = () => {
                     <span>Quay lại danh sách phiếu</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setPrintingTicket(activeTicket)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#B71C1C] hover:bg-[#7F0E0E] text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
-                  >
-                    <Printer className="w-4 h-4 text-[#FFD700]" />
-                    <span>In tem kiểm tra</span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        window.dispatchEvent(
+                          new CustomEvent('open-ticket-chat', {
+                            detail: { ticketId: activeTicket.id },
+                          })
+                        )
+                      }
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#003366] hover:bg-[#002244] text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4 text-amber-300" />
+                      <span>Trò chuyện với {activeTicket.creatorName}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPrintingTicket(activeTicket)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#B71C1C] hover:bg-[#7F0E0E] text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                    >
+                      <Printer className="w-4 h-4 text-[#FFD700]" />
+                      <span>In tem kiểm tra</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Card Thông tin phiếu */}
@@ -521,6 +547,9 @@ export const TechnicalDashboard: React.FC = () => {
                   onComplete={handleCompleteTicket}
                 />
               </div>
+            ) : activeTab === 'device-ips' ? (
+              /* ─── MÀN HÌNH DỮ LIỆU MÁY IN / MÁY TÍNH ĐƠN VỊ & MÃ IP ─── */
+              <DeviceIpManager />
             ) : (
               /* ─── MÀN HÌNH DANH SÁCH PHIẾU ĐƠN GIẢN, GỌN GÀNG ─── */
               <div className="space-y-4">
@@ -672,6 +701,24 @@ export const TechnicalDashboard: React.FC = () => {
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <div className="inline-flex items-center gap-1.5">
+                                  {t.assigneeId && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        window.dispatchEvent(
+                                          new CustomEvent('open-ticket-chat', {
+                                            detail: { ticketId: t.id },
+                                          })
+                                        )
+                                      }
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003366] border border-blue-200 font-bold text-xs transition-colors cursor-pointer"
+                                      title={`Trò chuyện với ${t.creatorName}`}
+                                    >
+                                      <MessageSquare className="w-3.5 h-3.5" />
+                                      <span>Chat</span>
+                                    </button>
+                                  )}
+
                                   <button
                                     type="button"
                                     onClick={() => setPrintingTicket(t)}
@@ -704,6 +751,9 @@ export const TechnicalDashboard: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Cửa sổ Trò chuyện bảo mật 24h liên thông Technical <-> Customer */}
+      <TicketChatWidget />
 
       {/* Modal KPI */}
       <TechnicalKpiModal

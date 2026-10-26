@@ -12,7 +12,7 @@ import { CustomerDashboard } from './pages/CustomerDashboard';
 import { TechnicalDashboard } from './pages/TechnicalDashboard';
 
 function AppContent() {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role, isLoading } = useAuth();
   const [currentPath, setCurrentPath] = useState<string>(() => {
     return window.location.pathname || '/';
   });
@@ -33,6 +33,7 @@ function AppContent() {
 
   // Route protection (only check authentication, NO role restriction)
   useEffect(() => {
+    if (isLoading) return;
     if (!isAuthenticated) {
       if (currentPath !== '/login') {
         navigate('/login');
@@ -42,7 +43,17 @@ function AppContent() {
         navigate('/');
       }
     }
-  }, [isAuthenticated, currentPath]);
+  }, [isAuthenticated, isLoading, currentPath]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F0] flex items-center justify-center">
+        <div className="text-sm font-bold text-[#B71C1C] animate-pulse">
+          Đang kết nối Cơ sở dữ liệu...
+        </div>
+      </div>
+    );
+  }
 
   // Render view according to path
   if (!isAuthenticated || currentPath === '/login') {

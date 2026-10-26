@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   role: UserRole | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (username: string, password?: string) => Promise<{ success: boolean; message?: string; role?: UserRole }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -14,13 +15,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => apiClient.getCurrentUser());
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !!apiClient.getToken());
 
-  // Load user khi app khởi động
+  // Load user trực tiếp từ Database khi app khởi động
   useEffect(() => {
     const init = async () => {
       const token = apiClient.getToken();
-      if (!token) return;
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
       try {
         const me = await apiClient.me();
         if (me) {
@@ -32,6 +37,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch {
         apiClient.clearToken();
         setUser(null);
+      } finally {
+        setIsLoading(false);
       }
     };
     init();
@@ -66,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         role: user?.role || null,
         isAuthenticated: !!user,
+        isLoading,
         login,
         logout,
         refreshUser,

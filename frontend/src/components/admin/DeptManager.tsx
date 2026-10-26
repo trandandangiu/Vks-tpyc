@@ -107,7 +107,7 @@ export const DeptManager: React.FC<DeptManagerProps> = ({ departments, onRefresh
             Quản lý đơn vị
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Danh mục các phòng ban, đơn vị yêu cầu kỹ thuật.
+           
           </p>
         </div>
 
@@ -117,7 +117,7 @@ export const DeptManager: React.FC<DeptManagerProps> = ({ departments, onRefresh
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#B71C1C] hover:bg-[#7F0E0E] text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4 text-[#FFD700]" />
-          <span>+ Thêm đơn vị</span>
+          <span>Thêm đơn vị</span>
         </button>
       </div>
 

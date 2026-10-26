@@ -157,12 +157,6 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-neutral-500 text-xs flex items-center gap-1">
-                <Briefcase className="w-3 h-3" /> Vị trí/Chức danh:
-              </span>
-              <span className="text-neutral-700 font-medium">{ticket.creatorPosition}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-neutral-500 text-xs flex items-center gap-1">
                 <Building2 className="w-3 h-3" /> Đơn vị / Phòng:
               </span>
               <span className="text-neutral-700 font-medium text-right max-w-[200px] truncate">

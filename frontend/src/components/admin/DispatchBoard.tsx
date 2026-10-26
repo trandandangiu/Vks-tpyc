@@ -215,7 +215,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
 
                     <div>
                       <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                        Hẹn giờ (tùy chọn)
+                        Hẹn giờ
                       </label>
                       <input
                         type="datetime-local"
@@ -234,7 +234,7 @@ export const DispatchBoard: React.FC<DispatchBoardProps> = ({
                       className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#B71C1C] hover:bg-[#7F0E0E] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
                     >
                       <UserCheck className="w-4 h-4 text-[#FFD700]" />
-                      <span>{isAssigning ? 'ĐANG GÁN...' : 'GÁN VÀ ĐIỀU PHỐI'}</span>
+                      <span>{isAssigning ? 'ĐANG GÁN...' : 'ĐIỀU PHỐI'}</span>
                     </button>
                   </div>
                 </div>

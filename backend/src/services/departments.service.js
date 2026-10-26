@@ -87,26 +87,35 @@ export const departmentsService = {
     });
     if (!dept) throw { status: 404, message: 'Không tìm thấy phòng ban' };
 
+    // Gỡ liên kết đơn vị của các user thuộc phòng ban này
     if (dept._count.users > 0) {
-      throw { status: 400, message: `Còn ${dept._count.users} user trong phòng` };
-    }
-    if (dept._count.tickets > 0) {
-      throw { status: 400, message: `Còn ${dept._count.tickets} phiếu thuộc phòng` };
+      await prisma.user.updateMany({
+        where: { departmentId: id },
+        data: { departmentId: null },
+      });
     }
 
-    await prisma.department.update({ where: { id }, data: { active: false } });
+    // Xóa các phiếu thuộc phòng ban này (nếu có) trước khi xóa cứng phòng ban
+    if (dept._count.tickets > 0) {
+      await prisma.ticket.deleteMany({
+        where: { departmentId: id },
+      });
+    }
+
+    // Xóa cứng (Hard Delete) phòng ban khỏi CSDL
+    await prisma.department.delete({ where: { id } });
 
     await auditLogsService.create({
       userId: currentUser.id,
       userName: currentUser.fullName,
       userRole: currentUser.role,
-      action: 'DELETE_DEPARTMENT',
+      action: 'HARD_DELETE_DEPARTMENT',
       entityType: 'DEPARTMENT',
       entityId: id,
       oldValue: { code: dept.code, name: dept.name },
       level: 'SECURITY',
     });
 
-    return { success: true, message: 'Đã xóa phòng ban' };
+    return { success: true, message: `Đã xóa vĩnh viễn đơn vị "${dept.name}" khỏi CSDL` };
   },
 };

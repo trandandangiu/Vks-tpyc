@@ -1,7 +1,7 @@
 import React from 'react';
 import { Ticket } from '../../types';
 import { StatusBadge, PriorityBadge } from '../common/StatusBadge';
-import { Calendar, User, Clock, Star, Eye, Tag } from 'lucide-react';
+import { Calendar, User, Clock, Star, Eye, Tag, MessageSquare } from 'lucide-react';
 
 interface TicketCardProps {
   ticket: Ticket;
@@ -117,6 +117,24 @@ export const TicketCard: React.FC<TicketCardProps> = ({
           <Eye className="w-3.5 h-3.5" />
           <span>Xem chi tiết</span>
         </button>
+
+        {ticket.assigneeId && ticket.status !== 'CANCELLED' && (
+          <button
+            type="button"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('open-ticket-chat', {
+                  detail: { ticketId: ticket.id },
+                })
+              )
+            }
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl bg-[#003366] hover:bg-[#002244] text-white transition-all cursor-pointer"
+            title={`Trò chuyện với Kỹ thuật viên ${ticket.assigneeName || ''}`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-amber-300" />
+            <span>Trò chuyện</span>
+          </button>
+        )}
 
         {showRateButton && isDone && (
           <button

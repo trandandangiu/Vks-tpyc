@@ -142,33 +142,60 @@ export const usersService = {
 
   async remove(id, currentUser) {
     const user = await prisma.user.findUnique({ where: { id } });
-    if (!user || user.deletedAt) throw { status: 404, message: 'Không tìm thấy user' };
+    if (!user) throw { status: 404, message: 'Không tìm thấy user' };
     if (user.id === currentUser.id) throw { status: 400, message: 'Không thể xóa chính mình' };
     if (user.username === 'admin') throw { status: 400, message: 'Không thể xóa admin gốc' };
 
-    const stamp = Date.now();
-    await prisma.user.update({
+    // 1. Gỡ phân công ở các phiếu mà user này là kỹ thuật viên
+    await prisma.ticket.updateMany({
+      where: { assigneeId: id },
+      data: { assigneeId: null, assigneeName: null },
+    });
+
+    // 2. Xóa các phản hồi (replies) của user này
+    await prisma.ticketReply.deleteMany({
+      where: { userId: id },
+    });
+
+    // 3. Xóa file đính kèm và các phiếu do user này tạo để đảm bảo xóa cứng không vướng khóa ngoại
+    const createdTickets = await prisma.ticket.findMany({
+      where: { creatorId: id },
+      select: { id: true },
+    });
+    if (createdTickets.length > 0) {
+      const ticketIds = createdTickets.map((t) => t.id);
+      try {
+        const attachments = await prisma.ticketAttachment.findMany({
+          where: { ticketId: { in: ticketIds } },
+        });
+        const fs = await import('fs');
+        for (const att of attachments) {
+          try { fs.unlinkSync(att.filePath); } catch { /* ignore */ }
+        }
+      } catch { /* ignore */ }
+
+      await prisma.ticket.deleteMany({
+        where: { creatorId: id },
+      });
+    }
+
+    // 4. Xóa cứng (Hard Delete) trực tiếp khỏi bảng users trong DB
+    await prisma.user.delete({
       where: { id },
-      data: {
-        active: false,
-        deletedAt: new Date(),
-        username: `${user.username}__deleted_${stamp}`,
-        email: user.email ? `${user.email}__deleted_${stamp}` : null,
-      },
     });
 
     await auditLogsService.create({
       userId: currentUser.id,
       userName: currentUser.fullName,
       userRole: currentUser.role,
-      action: 'DELETE_USER',
+      action: 'HARD_DELETE_USER',
       entityType: 'USER',
       entityId: id,
       oldValue: { username: user.username, fullName: user.fullName },
       level: 'SECURITY',
     });
 
-    return { success: true, message: `Đã xóa tài khoản "${user.fullName}"` };
+    return { success: true, message: `Đã xóa vĩnh viễn tài khoản "${user.fullName}" khỏi CSDL` };
   },
 
   async toggleActive(id, currentUser) {

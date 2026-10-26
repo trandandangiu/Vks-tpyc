@@ -10,6 +10,7 @@ import {
   Check,
   Save,
   Printer,
+  Camera,
 } from 'lucide-react';
 import { useToast } from '../common/Toast';
 import { apiClient } from '../../services/apiClient';
@@ -403,7 +404,7 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
       {/* Upload ảnh AFTER */}
       <div>
         <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
-          Ảnh nghiệm thu sau xử lý 
+          Ảnh nghiệm thu sau xử lý (Hỗ trợ chụp trực tiếp trên điện thoại)
         </label>
 
         <div
@@ -416,11 +417,22 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
               : 'border-neutral-300 hover:border-[#B71C1C]/50 bg-neutral-50/50'
           }`}
         >
-          <Upload className="w-6 h-6 text-neutral-400 mx-auto mb-1.5" />
-          <p className="text-xs text-neutral-600">
-            Kéo thả ảnh kết quả hoặc{' '}
-            <label className="text-[#B71C1C] font-bold hover:underline cursor-pointer">
-              tải ảnh lên
+          <div className="flex flex-wrap items-center justify-center gap-2.5 mb-1.5">
+            <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#B71C1C] hover:bg-[#8E1515] text-white text-xs font-bold shadow-xs cursor-pointer transition-all">
+              <Camera className="w-4 h-4 text-[#FFD700]" />
+              <span>Chụp ảnh nghiệm thu (Camera)</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
+
+            <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-300 text-xs font-bold cursor-pointer transition-all">
+              <Upload className="w-4 h-4 text-[#B71C1C]" />
+              <span>Chọn ảnh từ máy</span>
               <input
                 type="file"
                 multiple
@@ -429,9 +441,9 @@ export const TicketProcessForm: React.FC<TicketProcessFormProps> = ({
                 className="hidden"
               />
             </label>
-          </p>
+          </div>
           <p className="text-[10px] text-neutral-400 mt-1">
-            Tối đa 4 ảnh
+            Tối đa 4 ảnh • Hỗ trợ chụp trực tiếp từ Camera điện thoại
           </p>
         </div>
 

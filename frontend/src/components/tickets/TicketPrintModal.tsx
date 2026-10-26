@@ -525,7 +525,7 @@ export const TicketPrintModal: React.FC<TicketPrintModalProps> = ({
               </div>
             ) : (
               <div className="text-neutral-500 text-[11px]">
-                Khổ tem nhãn tiêu chuẩn (105x74mm / A6 hoặc decal nhiệt) — in ra bóc dán trực tiếp lên máy.
+                
               </div>
             )}
 

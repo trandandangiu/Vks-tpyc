@@ -172,7 +172,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ users, departments, on
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#B71C1C] hover:bg-[#7F0E0E] text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
         >
           <UserPlus className="w-4 h-4 text-[#FFD700]" />
-          <span>+ Thêm người dùng</span>
+          <span>Thêm người dùng</span>
         </button>
       </div>
 

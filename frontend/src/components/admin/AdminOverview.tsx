@@ -231,7 +231,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-neutral-200/90 shadow-2xs flex flex-col justify-between">
           <div className="mb-2">
             <h3 className="font-bold text-sm text-neutral-900">Cơ cấu trạng thái phiếu</h3>
-            <p className="text-xs text-neutral-500">Phân bố theo quy trình 6 trạng thái xử lý</p>
+            <p className="text-xs text-neutral-500"></p>
           </div>
 
           <div className="h-64 w-full">
@@ -277,7 +277,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                 Tiến độ xử lý 7 ngày gần nhất
               </h3>
               <p className="text-xs text-neutral-500">
-                Cột chồng: Phiếu mới + Đang xử lý — Đường: Tỉ lệ hoàn thành
+                
               </p>
             </div>
             <div className="flex items-center gap-3 text-xs">
@@ -325,7 +325,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-bold text-sm text-neutral-900">5 Phiếu yêu cầu mới nhất</h3>
-            <p className="text-xs text-neutral-500">Cập nhật nhanh tình hình sự cố gần đây nhất</p>
+            <p className="text-xs text-neutral-500"></p>
           </div>
           <button
             type="button"

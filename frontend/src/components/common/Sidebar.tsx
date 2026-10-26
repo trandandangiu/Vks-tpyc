@@ -8,6 +8,7 @@ import {
   Users,
   Building,
   ShieldAlert,
+  AlertTriangle,
   X,
 } from 'lucide-react';
 import logoUrl from '../../public/icon.ico';
@@ -18,6 +19,7 @@ export type AdminTab =
   | 'all-tickets'
   | 'dispatch'
   | 'process'
+  | 'incidents'
   | 'users'
   | 'departments'
   | 'audit-logs';
@@ -63,6 +65,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'create-ticket' as AdminTab,
       label: 'Tạo phiếu mới',
       icon: PlusCircle,
+    },
+    {
+      id: 'incidents' as AdminTab,
+      label: 'Danh mục sự cố',
+      icon: AlertTriangle,
     },
     {
       id: 'users' as AdminTab,

@@ -166,7 +166,7 @@ export const TicketEditModal: React.FC<TicketEditModalProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
               Người yêu cầu
@@ -189,21 +189,6 @@ export const TicketEditModal: React.FC<TicketEditModalProps> = ({
               onChange={(e) => setCreatorPhone(e.target.value)}
               className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none"
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">
-              Vị trí
-            </label>
-            <select
-              value={creatorPosition}
-              onChange={(e) => setCreatorPosition(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-neutral-300 rounded-xl focus:border-[#B71C1C] focus:outline-none cursor-pointer"
-            >
-              {CREATOR_POSITIONS.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
           </div>
         </div>
 

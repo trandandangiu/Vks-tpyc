@@ -167,3 +167,70 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// ═══ 8. INCIDENT_TEMPLATE (Danh mục sự cố thường gặp) ═══
+model IncidentTemplate {
+  id              String   @id @default(uuid())
+  title           String
+  category        String   @default("Khác")
+  networkType     String   @default("ALL") @map("network_type") // LAN | WAN | ALL
+  defaultPriority String   @default("NORMAL") @map("default_priority")
+  descriptionHint String?  @map("description_hint")
+  sortOrder       Int      @default(0) @map("sort_order")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([networkType])
+  @@index([active])
+  @@map("incident_templates")
+}
+
+// ═══ 9. NOTIFICATION (Thông báo hệ thống cho Admin & User) ═══
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String   @default("INFO")
+  title     String
+  content   String
+  ticketId  String?  @map("ticket_id")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ═══ 10. DEVICE_IP_RECORD (Dữ liệu Máy in / Máy tính đơn vị - Mã IP - QLAHS/Internet) ═══
+model DeviceIpRecord {
+  id             String   @id @default(uuid())
+  unitAndDevice  String   @map("unit_and_device")
+  ipAddress      String   @map("ip_address")
+  deviceCategory String   @default("Máy QLAHS") @map("device_category")
+  note           String?
+  updatedBy      String?  @map("updated_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("device_ip_records")
+}
+
+// ═══ 11. CHAT_MESSAGE (Trò chuyện bảo mật 24h giữa Technical và Customer) ═══
+model ChatMessage {
+  id               String   @id @default(uuid())
+  ticketId         String   @map("ticket_id")
+  senderId         String   @map("sender_id")
+  senderName       String   @map("sender_name")
+  senderRole       String   @map("sender_role")
+  recipientId      String   @map("recipient_id")
+  encryptedContent String   @map("encrypted_content")
+  isRead           Boolean  @default(false) @map("is_read")
+  createdAt        DateTime @default(now()) @map("created_at")
+  expiresAt        DateTime @map("expires_at")
+
+  @@index([ticketId])
+  @@index([expiresAt])
+  @@map("chat_messages")
+}

@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#B71C1C" />
+    <link rel="icon" href="/icon.ico" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <title>Hệ Thống Phiếu Yêu Cầu Kỹ Thuật - Bộ phận Chuyển Đổi Số</title>
     <meta name="description" content="Hệ thống quản lý, tiếp nhận và điều phối phiếu yêu cầu kỹ thuật công nghệ thông tin - Bộ phận Chuyển đổi số." />
     <meta property="og:title" content="Hệ Thống Phiếu Yêu Cầu Kỹ Thuật - Bộ phận Chuyển Đổi Số" />
@@ -16,6 +20,12 @@
   <body class="bg-[#F5F5F0] text-neutral-800 antialiased font-sans">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
-
