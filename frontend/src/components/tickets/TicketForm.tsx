@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../services/apiClient';
 import { useToast } from '../common/Toast';
-import { TicketPriority, INCIDENT_CATEGORIES, IncidentTemplate } from '../../types';
+import { Ticket, TicketPriority, INCIDENT_CATEGORIES, IncidentTemplate, Department } from '../../types';
 import {
   Send,
   Upload,
@@ -10,7 +10,6 @@ import {
   Building2,
   User,
   Phone,
-  Briefcase,
   Globe,
   Network,
   CheckCircle2,
@@ -22,7 +21,7 @@ import {
 import { TicketWanForm } from './TicketWanForm';
 
 interface TicketFormProps {
-  onSuccess: () => void;
+  onSuccess: (createdTicket?: Ticket) => void;
 }
 
 type NetworkType = 'WAN' | 'LAN';
@@ -34,13 +33,41 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
   const { user } = useAuth();
   const toast = useToast();
 
-  // ====== PHÂN QUYỀN ADMIN ======
+  // ====== PHÂN QUYỀN ADMIN & KỸ THUẬT VIÊN ======
   const isAdmin =
     user?.role === 'ADMIN' ||
     (user as any)?.isAdmin === true ||
     (user as any)?.roleName === 'Admin';
+  const canSelectDepartment = isAdmin || user?.role === 'TECHNICAL';
 
   const [networkType, setNetworkType] = useState<NetworkType>('WAN');
+
+  // ====== DANH SÁCH PHÒNG BAN TỪ CSDL ======
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [selectedDeptId, setSelectedDeptId] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('deptId') || '';
+  });
+
+  useEffect(() => {
+    if (!canSelectDepartment) return;
+    apiClient
+      .getDepartments()
+      .then((list) => {
+        const sorted = [...list].sort((a, b) => {
+          if (a.code === 'CNTT') return 1;
+          if (b.code === 'CNTT') return -1;
+          return a.code.localeCompare(b.code);
+        });
+        setDepartments(sorted);
+        if (sorted.length > 0 && !selectedDeptId) {
+          setSelectedDeptId(sorted[0].id);
+        }
+      })
+      .catch(() => {
+        setDepartments([]);
+      });
+  }, [canSelectDepartment]);
 
   // ====== DANH SÁCH SỰ CỐ THƯỜNG GẶP TỪ DATABASE (LIÊN KẾT 100% VỚI DANH MỤC SỰ CỐ) ======
   const [incidentTemplates, setIncidentTemplates] = useState<IncidentTemplate[]>([]);
@@ -124,6 +151,22 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Tự động điền thông tin liên hệ của phòng ban khi chọn phòng ban
+  useEffect(() => {
+    if (!canSelectDepartment || !selectedDeptId || departments.length === 0) return;
+    const dept = departments.find((d) => d.id === selectedDeptId);
+    if (!dept) return;
+    const deptCustomer =
+      dept.users?.find((u) => u.role === 'CUSTOMER') || dept.users?.[0];
+    if (deptCustomer) {
+      setCreatorName(deptCustomer.fullName || dept.name);
+      setCreatorPhone(deptCustomer.phone || '');
+    } else {
+      setCreatorName(dept.name);
+      setCreatorPhone('');
+    }
+  }, [canSelectDepartment, selectedDeptId, departments]);
+
   // ====== XỬ LÝ ẢNH ======
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -171,6 +214,10 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (canSelectDepartment && !selectedDeptId) {
+      toast.error('Vui lòng chọn phòng ban / đơn vị cần tạo phiếu!');
+      return;
+    }
     if (!ticketTitle.trim()) {
       toast.error('Vui lòng chọn hoặc nhập tiêu đề sự cố!');
       return;
@@ -182,11 +229,15 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
 
     setIsSubmitting(true);
     try {
+      const rawTitle = ticketTitle.trim();
+      const resolvedTitle = rawTitle.startsWith('[') ? rawTitle : `[INTERNET] ${rawTitle}`;
+
       const res = await apiClient.createTicket({
-        title: isAdmin ? ticketTitle.trim() : `[INTERNET] ${ticketTitle.trim()}`,
+        title: resolvedTitle,
         description: description.trim(),
         category,
         priority,
+        departmentId: canSelectDepartment ? selectedDeptId : user?.departmentId,
         creatorName: creatorName.trim() || user?.fullName || 'Khách hàng',
         creatorPhone: creatorPhone.trim(),
         supplies: [],
@@ -206,12 +257,18 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
         }
       }
 
-      toast.success(`Gửi phiếu [${res.ticket.code}] thành công!`);
+      if (canSelectDepartment) {
+        toast.success(
+          `Đã tạo phiếu [${res.ticket.code}] và chuyển thẳng về trang của "${res.ticket.departmentName}"!`
+        );
+      } else {
+        toast.success(`Gửi phiếu [${res.ticket.code}] thành công!`);
+      }
       setTicketTitle('');
       setDescription('');
       setImages([]);
       setPreviewUrls([]);
-      onSuccess();
+      onSuccess(res.ticket);
     } catch (err: any) {
       toast.error(err.message || 'Lỗi kết nối');
     } finally {
@@ -232,7 +289,12 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
       <NetworkTypeSelector networkType={networkType} onChange={setNetworkType} />
 
       {networkType === 'WAN' ? (
-        <TicketWanForm onSuccess={onSuccess} />
+        <TicketWanForm
+          onSuccess={onSuccess}
+          departments={departments}
+          selectedDeptId={selectedDeptId}
+          onSelectDepartment={setSelectedDeptId}
+        />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="border-b border-neutral-100 pb-4">
@@ -241,26 +303,45 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
               Tạo phiếu yêu cầu hỗ trợ kỹ thuật
             </h2>
             <p className="text-xs text-neutral-500 mt-1">
-              Điền đầy đủ thông tin để Bộ phận "Công nghệ thông tin - Chuyển đổi số" tiếp nhận và xử lý nhanh chóng.
+              {canSelectDepartment
+                ? 'Chọn phòng ban từ CSDL để tạo phiếu trực tiếp về trang của đơn vị đó (hỗ trợ đơn vị đánh giá KPI).'
+                : 'Điền đầy đủ thông tin để Bộ phận "Công nghệ thông tin - Chuyển đổi số" tiếp nhận và xử lý nhanh chóng.'}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-[#B71C1C]" /> Đơn vị
+                <Building2 className="w-3.5 h-3.5 text-[#B71C1C]" /> Phòng ban / Đơn vị{' '}
+                {canSelectDepartment && <span className="text-red-500">*</span>}
               </label>
-              <input
-                type="text"
-                readOnly
-                value={user?.departmentName || user?.department?.name || 'Chưa gán đơn vị'}
-                className="w-full px-3.5 py-2.5 bg-neutral-100 border border-neutral-200 rounded-xl text-neutral-600 text-sm font-medium cursor-not-allowed"
-              />
+              {canSelectDepartment ? (
+                <select
+                  required
+                  value={selectedDeptId}
+                  onChange={(e) => setSelectedDeptId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-neutral-900 text-sm font-bold cursor-pointer"
+                >
+                  <option value="">-- Chọn phòng ban trong CSDL --</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      [{d.code}] {d.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  readOnly
+                  value={user?.departmentName || user?.department?.name || 'Chưa gán đơn vị'}
+                  className="w-full px-3.5 py-2.5 bg-neutral-100 border border-neutral-200 rounded-xl text-neutral-600 text-sm font-medium cursor-not-allowed"
+                />
+              )}
             </div>
 
             <div>
               <label className="block text-xs font-bold text-neutral-700 uppercase mb-1.5 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-neutral-500" /> Người tạo phiếu{' '}
+                <User className="w-3.5 h-3.5 text-neutral-500" /> Người yêu cầu / Đại diện phòng{' '}
                 <span className="text-red-500">*</span>
               </label>
               <input
@@ -268,6 +349,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
                 required
                 value={creatorName}
                 onChange={(e) => setCreatorName(e.target.value)}
+                placeholder="Nhập tên cán bộ hoặc tên phòng..."
                 className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] focus:ring-2 focus:ring-[#B71C1C]/20 rounded-xl text-neutral-800 text-sm font-medium"
               />
             </div>
@@ -280,6 +362,7 @@ export const TicketForm: React.FC<TicketFormProps> = ({ onSuccess }) => {
                 type="tel"
                 value={creatorPhone}
                 onChange={(e) => setCreatorPhone(e.target.value)}
+                placeholder="SĐT liên hệ (nếu có)"
                 className="w-full px-3.5 py-2.5 bg-white border border-neutral-300 focus:border-[#B71C1C] rounded-xl text-neutral-800 text-sm font-medium"
               />
             </div>

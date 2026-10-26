@@ -16,11 +16,15 @@ function AppContent() {
   const [currentPath, setCurrentPath] = useState<string>(() => {
     return window.location.pathname || '/';
   });
+  const [currentSearch, setCurrentSearch] = useState<string>(() => {
+    return window.location.search || '';
+  });
 
   // Keep path synced with browser URL
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPath(window.location.pathname);
+      setCurrentSearch(window.location.search);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -28,7 +32,8 @@ function AppContent() {
 
   const navigate = (path: string) => {
     window.history.pushState({}, '', path);
-    setCurrentPath(path);
+    setCurrentPath(window.location.pathname);
+    setCurrentSearch(window.location.search);
   };
 
   // Route protection (only check authentication, NO role restriction)
@@ -62,7 +67,7 @@ function AppContent() {
 
   // Without role barriers, any user can view any interface, and '/' routes to role default:
   if (currentPath === '/customer' || (currentPath === '/' && role === 'CUSTOMER')) {
-    return <CustomerDashboard />;
+    return <CustomerDashboard key={currentSearch} />;
   }
 
   if (currentPath === '/technical' || (currentPath === '/' && role === 'TECHNICAL')) {

@@ -8,7 +8,11 @@ export const attachmentsService = {
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
     if (!ticket) throw { status: 404, message: 'Không tìm thấy phiếu' };
 
-    if (currentUser.role === 'CUSTOMER' && ticket.creatorId !== currentUser.id) {
+    const isCustomerOwnerOrDept =
+      ticket.creatorId === currentUser.id ||
+      (currentUser.departmentId && ticket.departmentId === currentUser.departmentId);
+
+    if (currentUser.role === 'CUSTOMER' && !isCustomerOwnerOrDept) {
       throw { status: 403, message: 'Không có quyền' };
     }
 

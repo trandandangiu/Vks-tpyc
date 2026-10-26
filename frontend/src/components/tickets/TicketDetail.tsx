@@ -378,7 +378,7 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
             </div>
           )}
         </div>
-      ) : canRate && ticket.status === 'DONE' ? (
+      ) : canRate && ticket.status !== 'CANCELLED' && (ticket.status === 'DONE' || !!ticket.assigneeId) ? (
         <div className="bg-amber-50/80 rounded-2xl p-4 border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
             <h4 className="text-sm font-bold text-amber-900">Phiếu đã hoàn thành xử lý!</h4>

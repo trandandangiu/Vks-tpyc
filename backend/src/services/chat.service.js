@@ -108,9 +108,13 @@ function mapMessageRow(row) {
 }
 
 /**
- * Kiểm tra quyền truy cập phòng chat: Chỉ đúng Customer tạo phiếu và Technical được phân công
+ * Kiểm tra quyền truy cập phòng chat: Chỉ đúng Customer tạo phiếu (hoặc thuộc đơn vị của phiếu) và Technical được phân công
  */
-async function verifyTicketChatAccess(ticketId, userId) {
+async function verifyTicketChatAccess(ticketId, userOrId) {
+  const userId = typeof userOrId === 'object' ? userOrId.id : userOrId;
+  const userDeptId = typeof userOrId === 'object' ? userOrId.departmentId : null;
+  const userRole = typeof userOrId === 'object' ? userOrId.role : null;
+
   const ticket = await prisma.ticket.findUnique({
     where: { id: ticketId },
     select: {
@@ -118,6 +122,7 @@ async function verifyTicketChatAccess(ticketId, userId) {
       code: true,
       title: true,
       status: true,
+      departmentId: true,
       departmentName: true,
       creatorId: true,
       creatorName: true,
@@ -133,8 +138,12 @@ async function verifyTicketChatAccess(ticketId, userId) {
   if (!ticket.assigneeId) {
     throw { statusCode: 400, message: 'Phiếu này chưa được Admin điều phối Kỹ thuật viên' };
   }
-  if (ticket.creatorId !== userId && ticket.assigneeId !== userId) {
-    throw { statusCode: 403, message: 'Đoạn hội thoại này được bảo mật, chỉ người tạo phiếu và kỹ thuật viên phụ trách mới có quyền truy cập' };
+
+  const isSameDeptCustomer =
+    userRole === 'CUSTOMER' && userDeptId && ticket.departmentId === userDeptId;
+
+  if (ticket.creatorId !== userId && ticket.assigneeId !== userId && !isSameDeptCustomer) {
+    throw { statusCode: 403, message: 'Đoạn hội thoại này được bảo mật, chỉ đơn vị của phiếu và kỹ thuật viên phụ trách mới có quyền truy cập' };
   }
 
   return ticket;
@@ -147,13 +156,18 @@ export async function listRooms(user) {
   await ensureTable();
   await purgeExpiredMessages();
 
+  const orConditions = [
+    { creatorId: user.id },
+    { assigneeId: user.id },
+  ];
+  if (user.role === 'CUSTOMER' && user.departmentId) {
+    orConditions.push({ departmentId: user.departmentId });
+  }
+
   const tickets = await prisma.ticket.findMany({
     where: {
       assigneeId: { not: null },
-      OR: [
-        { creatorId: user.id },
-        { assigneeId: user.id },
-      ],
+      OR: orConditions,
       status: {
         in: ['ASSIGNED', 'PROCESSING', 'WAITING_SUPPLY', 'DONE'],
       },
@@ -164,6 +178,7 @@ export async function listRooms(user) {
       title: true,
       status: true,
       priority: true,
+      departmentId: true,
       departmentName: true,
       creatorId: true,
       creatorName: true,
@@ -180,7 +195,7 @@ export async function listRooms(user) {
 
   const rooms = await Promise.all(
     tickets.map(async (t) => {
-      const isTechnicalSide = t.assigneeId === user.id && t.creatorId !== user.id;
+      const isTechnicalSide = t.assigneeId === user.id && user.role !== 'CUSTOMER';
       const partnerId = isTechnicalSide ? t.creatorId : t.assigneeId;
       const partnerName = isTechnicalSide ? t.creatorName : (t.assigneeName || 'Kỹ thuật viên');
       const partnerRole = isTechnicalSide ? 'CUSTOMER' : 'TECHNICAL';
@@ -234,7 +249,7 @@ export async function listMessages(ticketId, user) {
   await ensureTable();
   await purgeExpiredMessages();
 
-  const ticket = await verifyTicketChatAccess(ticketId, user.id);
+  const ticket = await verifyTicketChatAccess(ticketId, user);
 
   // Đánh dấu đã đọc các tin nhắn gửi tới user
   await prisma.$executeRawUnsafe(
@@ -275,7 +290,7 @@ export async function sendMessage(ticketId, content, user) {
     throw { statusCode: 400, message: 'Nội dung tin nhắn không được để trống' };
   }
 
-  const ticket = await verifyTicketChatAccess(ticketId, user.id);
+  const ticket = await verifyTicketChatAccess(ticketId, user);
   const recipientId = user.id === ticket.assigneeId ? ticket.creatorId : ticket.assigneeId;
 
   const id = crypto.randomUUID();
@@ -318,7 +333,7 @@ export async function sendMessage(ticketId, content, user) {
  */
 export async function clearTicketMessages(ticketId, user) {
   await ensureTable();
-  const ticket = await verifyTicketChatAccess(ticketId, user.id);
+  const ticket = await verifyTicketChatAccess(ticketId, user);
 
   await prisma.$executeRawUnsafe(
     `DELETE FROM "chat_messages" WHERE "ticket_id" = $1`,

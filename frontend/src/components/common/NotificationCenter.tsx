@@ -183,6 +183,7 @@ export const NotificationCenter: React.FC = () => {
                 playNotificationSound();
                 toast.info(`${notif.title}: ${notif.content}`);
                 showSystemDesktopNotification(notif.title, notif.content, notif.id);
+                window.dispatchEvent(new CustomEvent('ticket-updated', { detail: notif }));
               }
             }
           } catch {

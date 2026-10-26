@@ -15,7 +15,13 @@ export const departmentsService = {
     const departments = await prisma.department.findMany({
       where,
       orderBy: { code: 'asc' },
-      include: { _count: { select: { users: true, tickets: true } } },
+      include: {
+        users: {
+          where: { active: true, deletedAt: null },
+          select: { id: true, username: true, fullName: true, phone: true, position: true, role: true },
+        },
+        _count: { select: { users: true, tickets: true } },
+      },
     });
 
     return { departments };
@@ -83,7 +89,13 @@ export const departmentsService = {
   async remove(id, currentUser) {
     const dept = await prisma.department.findUnique({
       where: { id },
-      include: { _count: { select: { users: true, tickets: true } } },
+      include: {
+        users: {
+          where: { active: true, deletedAt: null },
+          select: { id: true, username: true, fullName: true, phone: true, position: true, role: true },
+        },
+        _count: { select: { users: true, tickets: true } },
+      },
     });
     if (!dept) throw { status: 404, message: 'Không tìm thấy phòng ban' };
 

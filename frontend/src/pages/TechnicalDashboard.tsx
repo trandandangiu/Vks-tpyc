@@ -4,6 +4,7 @@ import { apiClient } from '../services/apiClient';
 import { Ticket, TicketStatus, SupplyItem } from '../types';
 import { Header } from '../components/common/Header';
 import { StatusBadge, PriorityBadge } from '../components/common/StatusBadge';
+import { TicketForm } from '../components/tickets/TicketForm';
 import { TicketProcessForm } from '../components/tickets/TicketProcessForm';
 import { TicketPrintModal } from '../components/tickets/TicketPrintModal';
 import { TechnicalKpiModal } from '../components/technical/TechnicalKpiModal';
@@ -30,9 +31,10 @@ import {
   Tag,
   Network,
   MessageSquare,
+  PlusCircle,
 } from 'lucide-react';
 
-type TechTab = 'pending' | 'done' | 'all' | 'device-ips' | 'blank-sticker';
+type TechTab = 'pending' | 'create-ticket' | 'done' | 'all' | 'device-ips' | 'blank-sticker';
 
 export const TechnicalDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -66,7 +68,12 @@ export const TechnicalDashboard: React.FC = () => {
   useEffect(() => {
     loadTickets();
     const timer = setInterval(loadTickets, 30000);
-    return () => clearInterval(timer);
+    const handleRealtimeUpdate = () => loadTickets();
+    window.addEventListener('ticket-updated', handleRealtimeUpdate);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('ticket-updated', handleRealtimeUpdate);
+    };
   }, [user?.id]);
 
   // Đếm số lượng theo nhóm cho Sidebar badge
@@ -201,6 +208,20 @@ export const TechnicalDashboard: React.FC = () => {
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
+  const goToDepartmentPage = (deptId: string) => {
+    window.history.pushState({}, '', `/customer?deptId=${encodeURIComponent(deptId)}`);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
+  const handleTicketCreated = (createdTicket?: Ticket) => {
+    if (createdTicket?.departmentId) {
+      goToDepartmentPage(createdTicket.departmentId);
+      return;
+    }
+    loadTickets();
+    setActiveTab('pending');
+  };
+
   const handleSelectTab = (tab: TechTab) => {
     if (tab === 'blank-sticker') {
       setPrintingTicket(blankTemplateTicket);
@@ -239,6 +260,11 @@ export const TechnicalDashboard: React.FC = () => {
       label: 'Việc cần xử lý',
       icon: Wrench,
       badge: pendingTickets.length > 0 ? pendingTickets.length : null,
+    },
+    {
+      id: 'create-ticket',
+      label: 'Tạo phiếu theo đơn vị',
+      icon: PlusCircle,
     },
     {
       id: 'done',
@@ -282,6 +308,15 @@ export const TechnicalDashboard: React.FC = () => {
                 Quản trị
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => handleSelectTab('create-ticket')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white border border-white/30 font-bold text-xs shadow-xs transition-all cursor-pointer"
+              title="Tạo phiếu hỗ trợ theo phòng ban trong CSDL"
+            >
+              <PlusCircle className="w-4 h-4 text-[#FFD700]" />
+              <span className="hidden sm:inline">Tạo phiếu theo đơn vị</span>
+            </button>
             <button
               type="button"
               onClick={() => setIsKpiModalOpen(true)}
@@ -418,6 +453,18 @@ export const TechnicalDashboard: React.FC = () => {
                   </button>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    {activeTicket.departmentId && (
+                      <button
+                        type="button"
+                        onClick={() => goToDepartmentPage(activeTicket.departmentId)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-bold text-xs transition-all cursor-pointer"
+                        title={`Mở trang của ${activeTicket.departmentName}`}
+                      >
+                        <Building2 className="w-4 h-4 text-[#B71C1C]" />
+                        <span>Trang của {activeTicket.departmentName}</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() =>
@@ -547,6 +594,11 @@ export const TechnicalDashboard: React.FC = () => {
                   onComplete={handleCompleteTicket}
                 />
               </div>
+            ) : activeTab === 'create-ticket' ? (
+              /* ─── MÀN HÌNH TẠO PHIẾU THEO PHÒNG BAN CÓ SẴN TRONG CSDL ─── */
+              <div className="space-y-4 animate-in fade-in duration-150">
+                <TicketForm onSuccess={handleTicketCreated} />
+              </div>
             ) : activeTab === 'device-ips' ? (
               /* ─── MÀN HÌNH DỮ LIỆU MÁY IN / MÁY TÍNH ĐƠN VỊ & MÃ IP ─── */
               <DeviceIpManager />
@@ -565,28 +617,39 @@ export const TechnicalDashboard: React.FC = () => {
                             : 'Tất cả phiếu kỹ thuật'}
                       </h1>
                       <p className="text-xs text-neutral-500 mt-0.5">
-                        Bấm vào phiếu để cập nhật tiến độ hoặc bấm <strong>"In tem"</strong> để in ngay phiếu kiểm tra dán máy.
+                        Bấm vào phiếu để cập nhật tiến độ hoặc bấm <strong>"Tạo phiếu theo đơn vị"</strong> khi phòng ban chưa tạo phiếu.
                       </p>
                     </div>
 
-                    <div className="relative w-full sm:w-72">
-                      <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Tìm mã phiếu, đơn vị, tiêu đề..."
-                        className="w-full pl-9 pr-8 py-2 text-xs bg-neutral-50 border border-neutral-300 rounded-xl focus:bg-white focus:border-[#B71C1C] outline-none"
-                      />
-                      {searchQuery && (
-                        <button
-                          type="button"
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectTab('create-ticket')}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#B71C1C] hover:bg-[#7F0E0E] text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer shrink-0"
+                      >
+                        <PlusCircle className="w-4 h-4 text-[#FFD700]" />
+                        <span>Tạo phiếu theo đơn vị</span>
+                      </button>
+
+                      <div className="relative w-full sm:w-64">
+                        <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Tìm mã phiếu, đơn vị, tiêu đề..."
+                          className="w-full pl-9 pr-8 py-2 text-xs bg-neutral-50 border border-neutral-300 rounded-xl focus:bg-white focus:border-[#B71C1C] outline-none"
+                        />
+                        {searchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
 

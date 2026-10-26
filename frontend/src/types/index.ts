@@ -23,6 +23,15 @@ export interface Department {
   code: string;
   name: string;
   description?: string;
+  active?: boolean;
+  users?: Array<{
+    id: string;
+    username: string;
+    fullName: string;
+    phone?: string;
+    position?: string;
+    role?: UserRole;
+  }>;
 }
 
 export interface SupplyItem {

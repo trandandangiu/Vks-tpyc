@@ -21,7 +21,7 @@ router.delete('/:id', requireRole('ADMIN'), ticketsController.remove);
 // ═══ Workflow ═══
 router.post('/:id/assign', requireRole('ADMIN'), ticketsController.assign);
 router.post('/:id/process', requireRole('TECHNICAL', 'ADMIN'), ticketsController.process);
-router.post('/:id/evaluate', requireRole('CUSTOMER', 'ADMIN'), ticketsController.evaluate);
+router.post('/:id/evaluate', requireRole('CUSTOMER', 'ADMIN', 'TECHNICAL'), ticketsController.evaluate);
 router.post('/:id/replies', ticketsController.addReply);
 
 export default router;

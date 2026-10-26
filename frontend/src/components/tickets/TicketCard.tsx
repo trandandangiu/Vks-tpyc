@@ -32,7 +32,8 @@ export const TicketCard: React.FC<TicketCardProps> = ({
     }
   };
 
-  const isDone = ticket.status === 'DONE';
+  const canEvaluate =
+    ticket.status !== 'CANCELLED' && (ticket.status === 'DONE' || !!ticket.assigneeId);
   const hasRated = !!ticket.rating;
 
   return (
@@ -136,7 +137,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({
           </button>
         )}
 
-        {showRateButton && isDone && (
+        {showRateButton && canEvaluate && (
           <button
             type="button"
             onClick={() => onRate && onRate(ticket)}

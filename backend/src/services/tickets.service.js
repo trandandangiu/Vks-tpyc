@@ -17,6 +17,13 @@ async function generateCode() {
   return `${prefix}${String(maxNum + 1).padStart(3, '0')}`;
 }
 
+function isCustomerAuthorizedForTicket(ticket, currentUser) {
+  if (!ticket || !currentUser) return false;
+  if (ticket.creatorId === currentUser.id) return true;
+  if (currentUser.departmentId && ticket.departmentId === currentUser.departmentId) return true;
+  return false;
+}
+
 export const ticketsService = {
   async list(currentUser, filters = {}) {
     const page = parseInt(filters.page) || 1;
@@ -26,7 +33,19 @@ export const ticketsService = {
     const where = {};
 
     if (currentUser.role === 'CUSTOMER') {
-      where.creatorId = currentUser.id;
+      if (currentUser.departmentId) {
+        where.AND = [
+          ...(where.AND || []),
+          {
+            OR: [
+              { creatorId: currentUser.id },
+              { departmentId: currentUser.departmentId },
+            ],
+          },
+        ];
+      } else {
+        where.creatorId = currentUser.id;
+      }
     } else if (currentUser.role === 'TECHNICAL') {
       if (filters.onlyMine === 'true') where.assigneeId = currentUser.id;
     }
@@ -75,7 +94,7 @@ export const ticketsService = {
 
     if (!ticket) throw { status: 404, message: 'Không tìm thấy phiếu' };
 
-    if (currentUser.role === 'CUSTOMER' && ticket.creatorId !== currentUser.id) {
+    if (currentUser.role === 'CUSTOMER' && !isCustomerAuthorizedForTicket(ticket, currentUser)) {
       throw { status: 403, message: 'Không có quyền xem phiếu này' };
     }
 
@@ -94,6 +113,10 @@ export const ticketsService = {
       throw { status: 400, message: 'Thiếu tiêu đề hoặc loại sự cố' };
     }
 
+    if (currentUser.role === 'TECHNICAL' && !payloadDeptId) {
+      throw { status: 400, message: 'Vui lòng chọn phòng ban / đơn vị cần tạo phiếu' };
+    }
+
     const targetDeptId = payloadDeptId || currentUser.departmentId;
     let dept = targetDeptId
       ? await prisma.department.findUnique({ where: { id: targetDeptId } })
@@ -102,6 +125,58 @@ export const ticketsService = {
     if (!dept) {
       throw { status: 400, message: 'Tài khoản chưa được gán đơn vị hợp lệ' };
     }
+
+    // Khi TECHNICAL hoặc ADMIN tạo phiếu theo phòng ban, tìm tài khoản CUSTOMER đại diện phòng ban đó
+    // để phiếu nhảy thẳng về trang của phòng đó phục vụ theo dõi & đánh giá KPI
+    let deptCustomer = null;
+    if (currentUser.role === 'TECHNICAL' || currentUser.role === 'ADMIN') {
+      deptCustomer = await prisma.user.findFirst({
+        where: {
+          departmentId: dept.id,
+          role: 'CUSTOMER',
+          active: true,
+          deletedAt: null,
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (!deptCustomer) {
+        deptCustomer = await prisma.user.findFirst({
+          where: {
+            departmentId: dept.id,
+            active: true,
+            deletedAt: null,
+          },
+          orderBy: { createdAt: 'asc' },
+        });
+      }
+    }
+
+    const isCreatedByTech = currentUser.role === 'TECHNICAL';
+    const resolvedCreatorId =
+      (currentUser.role === 'TECHNICAL' || currentUser.role === 'ADMIN') && deptCustomer
+        ? deptCustomer.id
+        : currentUser.id;
+    const resolvedCreatorName =
+      creatorName?.trim() ||
+      (deptCustomer
+        ? deptCustomer.fullName
+        : currentUser.role === 'CUSTOMER'
+          ? currentUser.fullName
+          : dept.name);
+    const resolvedCreatorPhone =
+      creatorPhone?.trim() ||
+      (deptCustomer
+        ? deptCustomer.phone
+        : currentUser.role === 'CUSTOMER'
+          ? currentUser.phone
+          : null);
+    const resolvedCreatorPosition =
+      creatorPosition ||
+      (deptCustomer
+        ? deptCustomer.position
+        : currentUser.role === 'CUSTOMER'
+          ? currentUser.position
+          : null);
 
     const code = await generateCode();
 
@@ -112,13 +187,17 @@ export const ticketsService = {
         description: description?.trim() || null,
         category,
         priority: priority || 'NORMAL',
-        status: 'NEW',
-        creatorId: currentUser.id,
-        creatorName: creatorName || currentUser.fullName,
-        creatorPhone: creatorPhone || currentUser.phone,
-        creatorPosition: creatorPosition || currentUser.position,
+        status: isCreatedByTech ? 'ASSIGNED' : 'NEW',
+        creatorId: resolvedCreatorId,
+        creatorName: resolvedCreatorName,
+        creatorPhone: resolvedCreatorPhone,
+        creatorPosition: resolvedCreatorPosition,
         departmentId: dept.id,
         departmentName: dept.name || '',
+        assigneeId: isCreatedByTech ? currentUser.id : null,
+        assigneeName: isCreatedByTech ? currentUser.fullName : null,
+        dispatcherId: isCreatedByTech ? currentUser.id : null,
+        dispatchedAt: isCreatedByTech ? new Date() : null,
         supplies: supplies.length > 0 ? {
           create: supplies.map((s) => ({
             name: s.name,
@@ -141,7 +220,7 @@ export const ticketsService = {
       action: 'CREATE_TICKET',
       entityType: 'TICKET',
       entityId: ticket.id,
-      newValue: { code, title, priority },
+      newValue: { code, title, priority, departmentId: dept.id, departmentName: dept.name },
       level: 'INFO',
     });
 
@@ -149,12 +228,34 @@ export const ticketsService = {
       where: { role: 'ADMIN', active: true, deletedAt: null },
       select: { id: true },
     });
-    notifyRealtime(admins.map((a) => a.id), {
-      type: 'TICKET_NEW',
-      title: '📋 Phiếu mới cần điều phối',
-      content: `${ticket.code} — ${ticket.title}`,
-      ticketId: ticket.id,
-    });
+    const adminIds = admins.map((a) => a.id).filter((aid) => aid !== currentUser.id);
+    if (adminIds.length > 0) {
+      notifyRealtime(adminIds, {
+        type: 'TICKET_NEW',
+        title: isCreatedByTech
+          ? `📋 KTV ${currentUser.fullName} tạo phiếu cho ${dept.name}`
+          : '📋 Phiếu mới cần điều phối',
+        content: `${ticket.code} — ${ticket.title}`,
+        ticketId: ticket.id,
+      });
+    }
+
+    // Thông báo trực tiếp đến các tài khoản của phòng ban đó để hiện ngay trên trang của phòng
+    if (currentUser.role === 'TECHNICAL' || currentUser.role === 'ADMIN') {
+      const deptUsers = await prisma.user.findMany({
+        where: { departmentId: dept.id, active: true, deletedAt: null },
+        select: { id: true },
+      });
+      const deptUserIds = deptUsers.map((u) => u.id).filter((uid) => uid !== currentUser.id);
+      if (deptUserIds.length > 0) {
+        notifyRealtime(deptUserIds, {
+          type: 'TICKET_NEW',
+          title: `📋 Phiếu hỗ trợ mới cho ${dept.name}`,
+          content: `${ticket.code} — ${ticket.title} (KTV: ${currentUser.fullName})`,
+          ticketId: ticket.id,
+        });
+      }
+    }
 
     return ticket;
   },
@@ -212,7 +313,13 @@ export const ticketsService = {
       content: `${ticket.code} — ${ticket.title}`,
       ticketId: id,
     });
-    notifyRealtime([ticket.creatorId], {
+
+    const deptUsers = await prisma.user.findMany({
+      where: { departmentId: ticket.departmentId, role: 'CUSTOMER', active: true, deletedAt: null },
+      select: { id: true },
+    });
+    const customerTargets = [...new Set([ticket.creatorId, ...deptUsers.map((u) => u.id)])];
+    notifyRealtime(customerTargets, {
       type: 'TICKET_STATUS',
       title: '✅ Phiếu đã được điều phối',
       content: `${ticket.code} đã được giao cho ${assignee.fullName}`,
@@ -297,15 +404,24 @@ export const ticketsService = {
         ASSIGNED: 'đã được điều phối',
       }[status] || status;
 
-      // Thông báo cho User tạo phiếu
-      notifyRealtime([ticket.creatorId], {
-        type: 'TICKET_STATUS',
-        title: `📢 Phiếu ${ticket.code} ${statusLabel}`,
-        content: status === 'DONE'
-          ? `Phiếu "${ticket.title}" đã hoàn thành. Vui lòng đánh giá chất lượng xử lý!`
-          : `Kỹ thuật viên ${currentUser.fullName} đã cập nhật: ${statusLabel}`,
-        ticketId: id,
+      // Thông báo cho User tạo phiếu và các tài khoản thuộc phòng ban của phiếu
+      const deptUsers = await prisma.user.findMany({
+        where: { departmentId: ticket.departmentId, role: 'CUSTOMER', active: true, deletedAt: null },
+        select: { id: true },
       });
+      const customerIds = [...new Set([ticket.creatorId, ...deptUsers.map((u) => u.id)])].filter(
+        (uid) => uid !== currentUser.id
+      );
+      if (customerIds.length > 0) {
+        notifyRealtime(customerIds, {
+          type: 'TICKET_STATUS',
+          title: `📢 Phiếu ${ticket.code} ${statusLabel}`,
+          content: status === 'DONE'
+            ? `Phiếu "${ticket.title}" đã hoàn thành. Vui lòng đánh giá chất lượng xử lý!`
+            : `Kỹ thuật viên ${currentUser.fullName} đã cập nhật: ${statusLabel}`,
+          ticketId: id,
+        });
+      }
 
       // Thông báo cho các Admin biết tiến độ kỹ thuật viên xử lý
       const admins = await prisma.user.findMany({
@@ -327,25 +443,35 @@ export const ticketsService = {
   },
 
   async evaluate(id, { rating, feedback }, currentUser) {
-    if (currentUser.role !== 'CUSTOMER' && currentUser.role !== 'ADMIN') {
-      throw { status: 403, message: 'Chỉ đơn vị tạo phiếu hoặc quản trị viên mới được đánh giá' };
+    if (!['CUSTOMER', 'ADMIN', 'TECHNICAL'].includes(currentUser.role)) {
+      throw { status: 403, message: 'Không có quyền đánh giá phiếu' };
     }
 
     const ticket = await prisma.ticket.findUnique({ where: { id } });
     if (!ticket) throw { status: 404, message: 'Không tìm thấy phiếu' };
-    if (currentUser.role === 'CUSTOMER' && ticket.creatorId !== currentUser.id) {
-      throw { status: 403, message: 'Bạn không phải chủ phiếu này' };
+    if (currentUser.role === 'CUSTOMER' && !isCustomerAuthorizedForTicket(ticket, currentUser)) {
+      throw { status: 403, message: 'Bạn không thuộc đơn vị của phiếu này' };
     }
-    if (ticket.status !== 'DONE') {
-      throw { status: 400, message: 'Chỉ đánh giá được phiếu đã hoàn thành' };
+    if (ticket.status === 'CANCELLED') {
+      throw { status: 400, message: 'Không thể đánh giá phiếu đã hủy' };
     }
     if (!rating || rating < 1 || rating > 5) {
       throw { status: 400, message: 'Đánh giá phải từ 1 đến 5 sao' };
     }
 
+    const evalUpdateData = {
+      rating,
+      feedback: feedback?.trim() || null,
+      ratedAt: new Date(),
+    };
+    if (ticket.status !== 'DONE') {
+      evalUpdateData.status = 'DONE';
+      evalUpdateData.completedAt = ticket.completedAt || new Date();
+    }
+
     const updated = await prisma.ticket.update({
       where: { id },
-      data: { rating, feedback: feedback?.trim() || null, ratedAt: new Date() },
+      data: evalUpdateData,
       include: {
         supplies: true,
         attachments: { orderBy: { uploadedAt: 'asc' } },
@@ -388,7 +514,7 @@ export const ticketsService = {
     const ticket = await prisma.ticket.findUnique({ where: { id } });
     if (!ticket) throw { status: 404, message: 'Không tìm thấy phiếu' };
 
-    if (currentUser.role === 'CUSTOMER' && ticket.creatorId !== currentUser.id) {
+    if (currentUser.role === 'CUSTOMER' && !isCustomerAuthorizedForTicket(ticket, currentUser)) {
       throw { status: 403, message: 'Không có quyền' };
     }
 
@@ -407,8 +533,18 @@ export const ticketsService = {
 
   async stats(currentUser) {
     const where = {};
-    if (currentUser.role === 'CUSTOMER') where.creatorId = currentUser.id;
-    else if (currentUser.role === 'TECHNICAL') where.assigneeId = currentUser.id;
+    if (currentUser.role === 'CUSTOMER') {
+      if (currentUser.departmentId) {
+        where.OR = [
+          { creatorId: currentUser.id },
+          { departmentId: currentUser.departmentId },
+        ];
+      } else {
+        where.creatorId = currentUser.id;
+      }
+    } else if (currentUser.role === 'TECHNICAL') {
+      where.assigneeId = currentUser.id;
+    }
 
     const all = await prisma.ticket.findMany({
       where,
@@ -434,7 +570,7 @@ export const ticketsService = {
     };
   },
 
-    // ✅ THÊM MỚI: ADMIN cập nhật ticket
+  // ✅ THÊM MỚI: ADMIN cập nhật ticket
   async update(id, data, currentUser) {
     if (currentUser.role !== 'ADMIN') {
       throw { status: 403, message: 'Chỉ ADMIN mới được sửa phiếu' };
@@ -545,5 +681,4 @@ export const ticketsService = {
 
     return { success: true, message: `Đã xóa phiếu [${ticket.code}]` };
   },
-
 };
